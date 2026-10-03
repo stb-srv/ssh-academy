@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
+import { OsProvider } from "@/components/lernen/os-context";
 import "./globals.css";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
@@ -20,11 +21,13 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <a href="#inhalt" className="sr-only focus:not-sr-only focus:absolute focus:p-2">
           Zum Inhalt springen
         </a>
-        <SiteHeader />
-        <main id="inhalt" className="flex-1">
-          {children}
-        </main>
-        <SiteFooter />
+        <OsProvider>
+          <SiteHeader />
+          <main id="inhalt" className="flex-1">
+            {children}
+          </main>
+          <SiteFooter />
+        </OsProvider>
       </body>
     </html>
   );

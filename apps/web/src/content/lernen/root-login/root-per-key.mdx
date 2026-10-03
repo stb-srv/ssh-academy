@@ -1,0 +1,34 @@
+Viele Hoster liefern Server so aus, dass du dich als root mit SSH-Key anmeldest. Das ist schon viel besser als
+root mit Passwort. Trotzdem lohnt sich ein genauer Blick.
+
+## Vorteile von root per Key
+
+- **Einfach:** Server bestellen, Key auswählen, sofort loslegen.
+- **Kein Passwort-Raten:** Mit Key-Login prallen Brute-Force-Angriffe ab.
+- **Für Automatisierung praktisch:** Werkzeuge wie Ansible oder Backup-Skripte brauchen oft volle Rechte.
+
+## Nachteile
+
+- **Ein Key = volle Macht.** Wird der Key gestohlen, hat der Angreifer sofort alle Rechte.
+- **Keine Zuordnung.** Nutzen mehrere Personen root, zeigt das Log nur „root“, nicht wer es war.
+- **Bekannter Benutzername.** Angreifer müssen nur noch den Key knacken, nicht auch noch den Namen raten.
+- **Keine Bremse.** Jeder Befehl läuft sofort mit allen Rechten, auch Tippfehler.
+
+## Die Einstellung in sshd
+
+Die Option `PermitRootLogin` steuert, wie root sich anmelden darf:
+
+| Wert | Bedeutung |
+|---|---|
+| `yes` | root mit Passwort **und** Key (unsicher) |
+| `prohibit-password` | root nur mit Key (Standard bei aktuellem OpenSSH) |
+| `forced-commands-only` | root nur mit Key **und** nur für Befehle, die per `command=` festgelegt sind |
+| `no` | root darf sich gar nicht per SSH anmelden |
+
+Aktuellen Wert prüfen:
+
+```bash
+sudo sshd -T | grep -i permitrootlogin
+```
+
+`sshd -T` zeigt die **tatsächlich wirksame** Konfiguration, inklusive aller Drop-in-Dateien.

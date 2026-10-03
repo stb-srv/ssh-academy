@@ -1,0 +1,49 @@
+Noch sicherer als eine Datei auf der Festplatte: Der Private Key liegt auf einem **Hardware-Sicherheitsschlüssel**
+wie YubiKey, Nitrokey oder SoloKey und kann dort nicht herauskopiert werden.
+
+## Wie das funktioniert
+
+Seit OpenSSH 8.2 gibt es die Key-Typen `ed25519-sk` und `ecdsa-sk` (SK = Security Key). Beim Anmelden musst du den
+Stick einstecken und antippen. Ohne den Stick nützt die Key-Datei niemandem etwas.
+
+## Key erzeugen
+
+Stick einstecken und:
+
+```bash
+ssh-keygen -t ed25519-sk -C "anna@yubikey"
+```
+
+Der Stick blinkt, du tippst ihn an. Danach entstehen wie gewohnt zwei Dateien. Die Datei ohne `.pub` ist hier nur
+ein **Verweis** auf den Schlüssel im Stick.
+
+### Varianten
+
+| Option | Wirkung |
+|---|---|
+| `-O resident` | Key wird im Stick gespeichert, du kannst ihn auf jedem Rechner mit `ssh-keygen -K` wiederherstellen |
+| `-O verify-required` | Zusätzlich PIN des Sticks bei jedem Login |
+| `-O application=ssh:arbeit` | Mehrere Keys auf einem Stick unterscheiden |
+
+Beispiel mit PIN und im Stick gespeichert:
+
+```bash
+ssh-keygen -t ed25519-sk -O resident -O verify-required -C "anna@yubikey"
+```
+
+## Voraussetzungen
+
+- OpenSSH **8.2 oder neuer** auf deinem Rechner **und** auf dem Server.
+- Ältere YubiKeys (vor Firmware 5.2.3) können nur `ecdsa-sk`.
+- Windows: Security Keys funktionieren mit einer aktuellen OpenSSH-Version (ab 8.9, z. B. über
+  `winget install Microsoft.OpenSSH.Preview`), die den Stick über Windows Hello anspricht.
+
+<Hinweis typ="warnung">
+Kaufe am besten **zwei** Sticks und registriere beide auf allen Servern. Geht einer verloren, kommst du mit dem
+zweiten weiter rein.
+</Hinweis>
+
+<Hinweis typ="info">
+Hardware-Keys können nur lokal an deinem Rechner erzeugt werden. Die SSH-Academy kann sie deshalb nicht für dich
+erzeugen, du kannst aber den Public Key importieren und wie jeden anderen Key auf Server verteilen.
+</Hinweis>

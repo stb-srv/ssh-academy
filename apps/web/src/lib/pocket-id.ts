@@ -58,6 +58,7 @@ function higherRole(a: TeamRole | undefined, b: TeamRole): TeamRole {
  * manuell vergebene Mitgliedschaften bleiben unangetastet.
  */
 export async function syncPocketIdGroups(userId: string, groups: string[]) {
+  const removedOrgs: string[] = [];
   await db.transaction(async (tx) => {
     await tx
       .insert(schema.idpUserGroups)
@@ -133,6 +134,7 @@ export async function syncPocketIdGroups(userId: string, groups: string[]) {
     // Entfernen: verwaltete Mitgliedschaften, deren Gruppe weggefallen ist
     for (const organizationId of managedOrgs) {
       if (desired.has(organizationId)) continue;
+      removedOrgs.push(organizationId);
       await tx
         .delete(schema.member)
         .where(and(eq(schema.member.userId, userId), eq(schema.member.organizationId, organizationId)));
@@ -168,4 +170,13 @@ export async function syncPocketIdGroups(userId: string, groups: string[]) {
         );
     }
   });
+
+  // Nach dem Abgleich: Keys aus Teams entfernen, die der Nutzer verloren hat. Läuft im Hintergrund,
+  // damit die Anmeldung nicht auf SSH-Verbindungen warten muss.
+  if (removedOrgs.length) {
+    const { offboardMember } = await import("./offboarding");
+    for (const organizationId of removedOrgs) {
+      void offboardMember(organizationId, userId, null).catch((err) => console.error("[offboarding]", err));
+    }
+  }
 }

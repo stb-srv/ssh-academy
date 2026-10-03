@@ -1,0 +1,37 @@
+Die Alternative zu root: Jede Person bekommt einen eigenen Benutzer mit sudo-Rechten (siehe Modul 5).
+
+## Vorteile
+
+- **Nachvollziehbar:** Jeder sudo-Befehl landet im Log mit Benutzername:
+
+```bash
+sudo journalctl _COMM=sudo --since today
+```
+
+```text
+anna : TTY=pts/0 ; PWD=/home/anna ; USER=root ; COMMAND=/usr/bin/apt upgrade
+```
+
+- **Doppelter Schutz:** Für Root-Rechte braucht ein Angreifer deinen Key **und** dein sudo-Passwort.
+- **Gezielte Rechte:** Wer nur Webseiten deployen soll, bekommt nur das (sudoers-Regeln).
+- **Sauberes Offboarding:** Verlässt jemand das Team, wird genau sein Benutzer gesperrt.
+- **Weniger Unfälle:** Ohne `sudo` davor kann ein Tippfehler nur deine eigenen Dateien treffen.
+
+## Nachteile
+
+- Etwas mehr Einrichtung pro Person und Server.
+- `sudo` muss vor Verwaltungsbefehle, und das sudo-Passwort muss man kennen.
+- Bei vielen Servern müssen Benutzer überall gepflegt werden (dafür gibt es zentrale Werkzeuge wie die
+  SSH-Academy, Ansible oder SSH-Zertifikate).
+
+## Direkter Vergleich
+
+| | root per Key | Eigener Benutzer + sudo |
+|---|---|---|
+| Einrichtung | Sehr einfach | Etwas Aufwand |
+| Wer hat was getan? | Unbekannt | Im Log sichtbar |
+| Geklauter Key | Sofort volle Rechte | Zusätzlich sudo-Passwort nötig |
+| Rechte abstufen | Nicht möglich | Möglich |
+| Person entfernen | Key aus root suchen und löschen | Benutzer sperren |
+| Für Menschen | ⚠️ | ✅ |
+| Für Automatisierung | ➖ (mit Einschränkungen) | ✅ eigener Dienst-Benutzer |

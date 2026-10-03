@@ -51,6 +51,7 @@ cd ssh-academy
 cp .env.example .env
 sed -i "s/^BETTER_AUTH_SECRET=.*/BETTER_AUTH_SECRET=$(openssl rand -hex 32)/" .env
 sed -i "s/^POSTGRES_PASSWORD=.*/POSTGRES_PASSWORD=$(openssl rand -hex 24)/" .env
+sed -i "s/^GATEWAY_INTERNAL_TOKEN=.*/GATEWAY_INTERNAL_TOKEN=$(openssl rand -hex 32)/" .env
 nano .env
 ```
 
@@ -77,7 +78,7 @@ HTTP_PORT=8080
 HTTPS_PORT=8443
 ```
 
-Im Proxy Websockets erlauben (wird ab Phase 2 für das Web-Terminal gebraucht).
+Im Proxy **Websockets erlauben**: Web-Terminal und Dateibrowser laufen über `/gateway/ws`.
 
 ### Variante C: Nur im Heimnetz
 
@@ -100,6 +101,15 @@ docker compose cp caddy:/data/caddy/pki/authorities/local/root.crt ./caddy-root.
 Eine nackte IP-Adresse als `APP_URL` funktioniert zwar, aber **ohne Passkeys** (Browser erlauben
 Passkeys nur für Domainnamen).
 
+### Server im Heimnetz verwalten
+
+Das SSH-Gateway verbindet sich zum Schutz vor Missbrauch standardmäßig nur mit öffentlichen Adressen.
+Sollen Server im eigenen Netz (z. B. andere Proxmox-Container) verwaltet werden, diese Netze freigeben:
+
+```env
+SSH_ALLOWED_NETWORKS=192.168.1.0/24
+```
+
 ## 5. Starten
 
 ```bash
@@ -121,10 +131,17 @@ docker compose logs web | grep -A4 "\[mail\]"
 | Aufgabe | Befehl |
 |---|---|
 | Update | `cd /opt/ssh-academy && git pull && docker compose up -d --build` |
-| Logs | `docker compose logs -f web` |
+| Logs | `docker compose logs -f web gateway` |
 | Datenbank sichern | `docker compose exec db pg_dump -U ssh_academy ssh_academy > backup.sql` |
 | Datenbank zurückspielen | `docker compose exec -T db psql -U ssh_academy ssh_academy < backup.sql` |
+| Tresor-Schlüssel sichern | `docker compose cp gateway:/data/vault-keys.json ./vault-keys.json` |
 
 Zusätzlich empfiehlt sich ein regelmäßiges Proxmox-Backup des Containers (vzdump). Die Datei `.env`
 enthält `BETTER_AUTH_SECRET`; ohne sie sind gespeicherte Pocket-ID-Tokens und 2FA-Daten nicht mehr
 lesbar. Sichere sie getrennt.
+
+**Der Tresor-Schlüssel ist genauso wichtig:** Im Volume `gateway-data` liegt `vault-keys.json`. Nur damit
+lassen sich die im Tresor gespeicherten Private Keys und die Zertifizierungsstellen entschlüsseln. Geht die
+Datei verloren, sind alle Tresor-Keys unbrauchbar (die Public Keys auf den Servern bleiben, du kommst mit
+eigenen Keys weiter drauf). Sichere sie getrennt von der Datenbank, zum Beispiel verschlüsselt im
+Passwort-Manager.

@@ -1,0 +1,71 @@
+Stell dir vor, dein Server steht in einem Rechenzentrum in Frankfurt und du sitzt zu Hause am Laptop. Du willst
+dort Programme installieren, Dateien ändern oder nachsehen, ob alles läuft. Genau dafür gibt es **SSH**.
+
+## SSH in einem Satz
+
+SSH (**S**ecure **Sh**ell) ist eine verschlüsselte Fernsteuerung für die Kommandozeile eines anderen Rechners.
+Alles, was du tippst, wird auf dem Server ausgeführt, und die Antwort kommt verschlüsselt zu dir zurück.
+
+```bash
+ssh anna@203.0.113.10
+```
+
+Dieser Befehl bedeutet: „Verbinde mich als Benutzer `anna` mit dem Rechner `203.0.113.10`.“ Danach siehst du die
+Eingabezeile des Servers, zum Beispiel:
+
+```text
+anna@webserver:~$
+```
+
+Ab jetzt läuft jeder Befehl auf dem Server, nicht mehr auf deinem Laptop. Mit `exit` beendest du die Verbindung.
+
+## Warum verschlüsselt so wichtig ist
+
+Früher gab es `telnet`. Das funktionierte ähnlich, schickte aber alles im Klartext, auch dein Passwort. Jeder im
+selben WLAN oder irgendwo auf dem Weg durchs Internet konnte mitlesen. SSH verschlüsselt die komplette Verbindung
+und prüft außerdem, ob du wirklich mit dem richtigen Server sprichst.
+
+## Was du dafür brauchst
+
+| Seite | Was | Bemerkung |
+|---|---|---|
+| Dein Rechner | SSH-Client | Bei Linux, macOS und Windows 10/11 bereits eingebaut |
+| Server | SSH-Server (`sshd`) | Bei fast jedem Linux-Server vorinstalliert |
+| Netzwerk | Port 22 erreichbar | Standard-Port von SSH, kann geändert werden |
+
+<OsTabs>
+<Os name="unix">
+
+Öffne das **Terminal** (macOS: Programme → Dienstprogramme → Terminal) und prüfe:
+
+```bash
+ssh -V
+```
+
+</Os>
+<Os name="windows">
+
+Öffne **PowerShell** (Startmenü → „PowerShell“ eintippen) und prüfe:
+
+```powershell
+ssh -V
+```
+
+Kommt eine Fehlermeldung, installiere den OpenSSH-Client unter Einstellungen → System → Optionale Features.
+
+</Os>
+</OsTabs>
+
+Erscheint eine Versionsnummer wie `OpenSSH_9.6p1`, bist du startklar.
+
+## Wie meldest du dich an?
+
+Es gibt zwei Wege:
+
+1. **Mit Passwort:** einfach, aber unsicherer (dazu gleich mehr).
+2. **Mit SSH-Key:** ein Schlüsselpaar, das sicherer und bequemer ist. Darum geht es in diesem Kurs.
+
+<Hinweis typ="tipp">
+Du brauchst für diesen Kurs keinen eigenen Server. Lies die Lektionen in Ruhe durch. Wenn du später einen Server
+hast, kannst du jeden Schritt nachmachen.
+</Hinweis>

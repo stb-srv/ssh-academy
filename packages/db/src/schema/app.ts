@@ -1,5 +1,6 @@
 import { relations, sql } from "drizzle-orm";
 import {
+  bigint,
   boolean,
   check,
   index,
@@ -10,6 +11,7 @@ import {
   pgTable,
   primaryKey,
   text,
+  type AnyPgColumn,
   timestamp,
   uniqueIndex,
   uuid,
@@ -194,6 +196,11 @@ export const server = pgTable(
     hostKeyConfirmedAt: timestamp("host_key_confirmed_at", { withTimezone: true }),
     hostKeyConfirmedBy: text("host_key_confirmed_by").references(() => user.id, { onDelete: "set null" }),
     status: serverStatus("status").notNull().default("unknown"),
+    /** Tresor-Key, mit dem die Plattform als defaultUser Verwaltungsaufgaben erledigt (verteilen, entziehen, Offboarding) */
+    managementKeyId: uuid("management_key_id").references((): AnyPgColumn => sshKey.id, { onDelete: "set null" }),
+    /** Zertifizierungsstelle, der dieser Server vertraut (Phase 4) */
+    trustedCaId: uuid("trusted_ca_id").references((): AnyPgColumn => sshCa.id, { onDelete: "set null" }),
+    lastError: text("last_error"),
     lastCheckAt: timestamp("last_check_at", { withTimezone: true }),
     createdBy: text("created_by").references(() => user.id, { onDelete: "set null" }),
     ...timestamps,
@@ -298,22 +305,55 @@ export const keyDeployment = pgTable(
   (t) => [uniqueIndex("key_deployment_unique_idx").on(t.keyId, t.serverId, t.linuxUser)],
 );
 
+export const connectionKind = pgEnum("connection_kind", ["terminal", "sftp"]);
+export const connectionStatus = pgEnum("connection_status", ["pending", "active", "closed", "failed"]);
+
+/**
+ * Eine Browser-Verbindung (Terminal oder SFTP). Die Zeile ist zugleich das Einmal-Token:
+ * Die Web-App legt sie mit tokenHash an, das Gateway löst sie genau einmal ein.
+ */
 export const connectionSession = pgTable(
   "connection_session",
   {
     id: uuid("id").primaryKey().defaultRandom(),
+    kind: connectionKind("kind").notNull().default("terminal"),
+    status: connectionStatus("status").notNull().default("pending"),
+    tokenHash: text("token_hash").unique(),
+    tokenExpiresAt: timestamp("token_expires_at", { withTimezone: true }),
     userId: text("user_id").references(() => user.id, { onDelete: "set null" }),
+    organizationId: text("organization_id").references(() => organization.id, { onDelete: "set null" }),
     serverId: uuid("server_id").references(() => server.id, { onDelete: "set null" }),
     keyId: uuid("key_id").references(() => sshKey.id, { onDelete: "set null" }),
+    authMethod: text("auth_method", { enum: ["key", "password", "certificate"] }).notNull().default("key"),
     linuxUser: text("linux_user").notNull(),
+    record: boolean("record").notNull().default(false),
+    idleTimeoutMinutes: integer("idle_timeout_minutes").notNull().default(15),
+    maxDurationMinutes: integer("max_duration_minutes").notNull().default(480),
     clientIp: inet("client_ip"),
-    startedAt: timestamp("started_at", { withTimezone: true }).defaultNow().notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    startedAt: timestamp("started_at", { withTimezone: true }),
     endedAt: timestamp("ended_at", { withTimezone: true }),
     endReason: text("end_reason"),
-    recordingPath: text("recording_path"),
+    bytesIn: bigint("bytes_in", { mode: "number" }).notNull().default(0),
+    bytesOut: bigint("bytes_out", { mode: "number" }).notNull().default(0),
   },
-  (t) => [index("connection_session_user_idx").on(t.userId), index("connection_session_server_idx").on(t.serverId)],
+  (t) => [
+    index("connection_session_user_idx").on(t.userId),
+    index("connection_session_server_idx").on(t.serverId),
+    index("connection_session_org_idx").on(t.organizationId, t.createdAt),
+  ],
 );
+
+/** Aufzeichnung einer Terminal-Sitzung im asciicast-v2-Format, gzip-komprimiert und Base64-kodiert */
+export const sessionRecording = pgTable("session_recording", {
+  sessionId: uuid("session_id")
+    .primaryKey()
+    .references(() => connectionSession.id, { onDelete: "cascade" }),
+  data: text("data").notNull(),
+  sizeBytes: integer("size_bytes").notNull(),
+  durationMs: integer("duration_ms").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
 
 /** Append-only Audit-Log. Wird nie aktualisiert, nur nach Aufbewahrungsfrist gelöscht. */
 export const auditEvent = pgTable(
@@ -334,6 +374,88 @@ export const auditEvent = pgTable(
     index("audit_event_org_created_idx").on(t.organizationId, t.createdAt),
     index("audit_event_actor_idx").on(t.actorId),
   ],
+);
+
+// ---------------------------------------------------------------------------
+// Team-Einstellungen
+// ---------------------------------------------------------------------------
+
+export const teamSettings = pgTable("team_settings", {
+  organizationId: text("organization_id")
+    .primaryKey()
+    .references(() => organization.id, { onDelete: "cascade" }),
+  /** Terminal-Sitzungen aufzeichnen (Standard aus; Nutzer sehen einen Hinweis, wenn aktiv) */
+  recordSessions: boolean("record_sessions").notNull().default(false),
+  idleTimeoutMinutes: integer("idle_timeout_minutes").notNull().default(15),
+  maxSessionHours: integer("max_session_hours").notNull().default(8),
+  /** Höchste Gültigkeit von Zertifikaten in Minuten */
+  maxCertMinutes: integer("max_cert_minutes").notNull().default(60 * 12),
+  ...timestamps,
+});
+
+// ---------------------------------------------------------------------------
+// Phase 4: SSH-Zertifizierungsstelle und API-Tokens
+// ---------------------------------------------------------------------------
+
+/** Zertifizierungsstelle. Der private Schlüssel ist wie Tresor-Keys versiegelt; nur das Gateway öffnet ihn. */
+export const sshCa = pgTable(
+  "ssh_ca",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    ...ownership,
+    name: text("name").notNull(),
+    publicKey: text("public_key").notNull(),
+    fingerprintSha256: text("fingerprint_sha256").notNull(),
+    ciphertext: text("ciphertext").notNull(),
+    nonce: text("nonce").notNull(),
+    authTag: text("auth_tag").notNull(),
+    wrappedDek: text("wrapped_dek").notNull(),
+    kekVersion: integer("kek_version").notNull(),
+    nextSerial: bigint("next_serial", { mode: "bigint" }).notNull().default(sql`1`),
+    createdBy: text("created_by").references(() => user.id, { onDelete: "set null" }),
+    ...timestamps,
+  },
+  (t) => [ownershipCheck("ssh_ca"), index("ssh_ca_owner_user_idx").on(t.ownerUserId), index("ssh_ca_org_idx").on(t.organizationId)],
+);
+
+export const sshCertificate = pgTable(
+  "ssh_certificate",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    caId: uuid("ca_id")
+      .notNull()
+      .references(() => sshCa.id, { onDelete: "cascade" }),
+    keyId: uuid("key_id").references(() => sshKey.id, { onDelete: "set null" }),
+    userId: text("user_id").references(() => user.id, { onDelete: "set null" }),
+    serial: bigint("serial", { mode: "bigint" }).notNull(),
+    certKeyId: text("cert_key_id").notNull(),
+    principals: text("principals").array().notNull(),
+    publicKeyFingerprint: text("public_key_fingerprint").notNull(),
+    validAfter: timestamp("valid_after", { withTimezone: true }).notNull(),
+    validBefore: timestamp("valid_before", { withTimezone: true }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [uniqueIndex("ssh_certificate_serial_idx").on(t.caId, t.serial), index("ssh_certificate_user_idx").on(t.userId)],
+);
+
+export const apiToken = pgTable(
+  "api_token",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    /** Erste Zeichen des Tokens zum Wiedererkennen, z. B. "ssha_3fk2" */
+    prefix: text("prefix").notNull(),
+    tokenHash: text("token_hash").notNull().unique(),
+    scopes: text("scopes").array().notNull(),
+    lastUsedAt: timestamp("last_used_at", { withTimezone: true }),
+    expiresAt: timestamp("expires_at", { withTimezone: true }),
+    revokedAt: timestamp("revoked_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [index("api_token_user_idx").on(t.userId)],
 );
 
 // ---------------------------------------------------------------------------
@@ -362,7 +484,8 @@ export const sshKeyRelations = relations(sshKey, ({ one, many }) => ({
   deployments: many(keyDeployment),
 }));
 
-export const serverRelations = relations(server, ({ many }) => ({
+export const serverRelations = relations(server, ({ many, one }) => ({
+  managementKey: one(sshKey, { fields: [server.managementKeyId], references: [sshKey.id] }),
   deployments: many(keyDeployment),
   groups: many(serverGroupMember),
 }));

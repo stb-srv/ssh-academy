@@ -1,0 +1,47 @@
+Ein SSH-Key ist eigentlich ein **Schlüsselpaar**: zwei Dateien, die mathematisch zusammengehören.
+
+<KeyDiagram />
+
+## Das Bild mit Schloss und Schlüssel
+
+- Der **Public Key** ist wie ein Vorhängeschloss. Du kannst beliebig viele Kopien davon an beliebig viele Server
+  hängen. Wer es sieht, kann damit nichts anfangen.
+- Der **Private Key** ist der einzige Schlüssel, der in diese Schlösser passt. Er bleibt immer bei dir.
+
+Auf deinem Rechner sehen die Dateien so aus:
+
+```text
+~/.ssh/id_ed25519       <- Private Key (geheim!)
+~/.ssh/id_ed25519.pub   <- Public Key (darf überall hin)
+```
+
+Ein Public Key ist eine einzige Textzeile:
+
+```text
+ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGZp1xRk8xV3pJ0y0w8Kx7m4pHq0Qe0a9QWm3Tq8Zl8b anna@laptop
+```
+
+Sie besteht aus drei Teilen: dem Typ (`ssh-ed25519`), dem eigentlichen Schlüssel und einem Kommentar, damit du
+später weißt, zu welchem Gerät der Key gehört.
+
+## Was beim Anmelden passiert
+
+<LoginFlowDiagram />
+
+1. Dein Rechner sagt dem Server, welchen Public Key er benutzen möchte.
+2. Der Server schaut in die Datei `authorized_keys` des Benutzers. Steht der Key dort, schickt er eine
+   Zufallszahl zurück.
+3. Dein Rechner unterschreibt diese Zahl mit dem Private Key.
+4. Der Server prüft die Unterschrift mit dem Public Key. Passt sie, bist du drin.
+
+Der Private Key selbst wird dabei **nie** übertragen. Deshalb ist SSH mit Keys so sicher.
+
+<Hinweis typ="gefahr" titel="Die wichtigste Regel">
+Gib deinen Private Key niemals weiter, kopiere ihn nicht in Chats, E-Mails oder Cloud-Notizen und lade ihn nie auf
+einen Server hoch. Wer ihn hat, kann sich überall als du anmelden.
+</Hinweis>
+
+<Hinweis typ="profi">
+Bei Ed25519 ist der Public Key ein Punkt auf einer elliptischen Kurve, der aus dem Private Key berechnet wird. Die
+Umkehrung (vom Public zum Private Key) ist mit heutigen Mitteln nicht machbar. Signiert wird nach RFC 8709.
+</Hinweis>

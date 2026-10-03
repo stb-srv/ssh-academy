@@ -1,0 +1,47 @@
+Beim Erzeugen fragt `ssh-keygen` nach einer **Passphrase**. Du kannst sie leer lassen, solltest es aber in den
+meisten Fällen nicht.
+
+## Was die Passphrase macht
+
+Die Passphrase **verschlüsselt den Private Key auf deiner Festplatte**. Sie wird nie an einen Server geschickt.
+
+| Szenario | Ohne Passphrase | Mit Passphrase |
+|---|---|---|
+| Laptop wird gestohlen | Dieb kommt sofort auf alle deine Server | Key ist ohne Passphrase nutzlos |
+| Schadsoftware kopiert `~/.ssh` | Sofort nutzbar | Angreifer muss die Passphrase erst knacken |
+| Backup landet in falschen Händen | Sofort nutzbar | Geschützt |
+
+## Eine gute Passphrase
+
+- Lang statt kompliziert: **vier bis fünf zufällige Wörter** sind sicher und leicht zu merken, zum Beispiel
+  `Kaffee Leuchtturm Fahrrad Wolke`.
+- Nicht dein Login-Passwort und nicht dein Server-Passwort.
+- Am besten im Passwort-Manager speichern.
+
+## Muss ich sie jetzt ständig eintippen?
+
+Nein. Der **ssh-agent** merkt sich den entsperrten Key, solange du angemeldet bist. Du tippst die Passphrase also
+einmal pro Sitzung. Das zeigt Modul 4.
+
+## Passphrase ändern oder nachträglich setzen
+
+```bash
+ssh-keygen -p -f ~/.ssh/id_ed25519
+```
+
+Du wirst nach der alten (leer, falls keine) und der neuen Passphrase gefragt. Der Key selbst bleibt gleich, du
+musst auf den Servern nichts ändern.
+
+## Wann ist ein Key ohne Passphrase vertretbar?
+
+Für **automatische Abläufe**, die ohne Menschen laufen, etwa ein nächtliches Backup von Server A nach Server B. Dann
+sicherst du den Key anders ab:
+
+- eigener Key nur für diesen Zweck,
+- in `authorized_keys` auf genau einen Befehl und eine Quell-IP beschränkt (Modul 3),
+- nur auf dem Server, der ihn braucht, mit Rechten `600`.
+
+<Hinweis typ="profi">
+OpenSSH verschlüsselt Private Keys im eigenen Format mit `bcrypt_pbkdf` als Schlüsselableitung. Mit
+`ssh-keygen -a 100` erhöhst du die Rundenzahl und machst Brute-Force-Angriffe auf die Passphrase teurer.
+</Hinweis>

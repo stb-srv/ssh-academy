@@ -1,0 +1,72 @@
+Lange Befehle wie `ssh -i ~/.ssh/id_ed25519_arbeit -p 2222 anna@203.0.113.10` musst du nicht jedes Mal tippen. In der
+Datei `~/.ssh/config` legst du Kurznamen an.
+
+## Ein erstes Beispiel
+
+```text
+Host web
+  HostName 203.0.113.10
+  User anna
+  Port 2222
+  IdentityFile ~/.ssh/id_ed25519_arbeit
+  IdentitiesOnly yes
+```
+
+Ab jetzt reicht:
+
+```bash
+ssh web
+```
+
+Auch `scp`, `rsync`, `sftp`, Git und VS Code verstehen den Kurznamen:
+
+```bash
+scp backup.tar.gz web:/tmp/
+```
+
+## Die wichtigsten Einstellungen
+
+| Einstellung | Bedeutung |
+|---|---|
+| `Host` | Kurzname(n), auch mit Platzhaltern wie `*.example.de` |
+| `HostName` | Echte Adresse oder IP |
+| `User` | Benutzername auf dem Server |
+| `Port` | SSH-Port, Standard 22 |
+| `IdentityFile` | Welcher Private Key benutzt werden soll |
+| `IdentitiesOnly yes` | Nur diesen Key probieren, nicht alle aus dem Agent |
+| `ServerAliveInterval 60` | Hält die Verbindung bei Leerlauf offen |
+| `ProxyJump` | Über einen Zwischen-Server verbinden (nächste Lektionen) |
+
+## Mehrere Server, gemeinsame Einstellungen
+
+```text
+Host web db backup
+  User anna
+  IdentityFile ~/.ssh/id_ed25519
+
+Host web
+  HostName 203.0.113.10
+
+Host db
+  HostName 203.0.113.11
+
+Host backup
+  HostName 203.0.113.12
+  Port 2222
+
+Host *
+  ServerAliveInterval 60
+  AddKeysToAgent yes
+```
+
+SSH liest die Datei von oben nach unten. Für jede Einstellung gilt der **erste** gefundene Wert. Deshalb gehören
+allgemeine Regeln (`Host *`) ans Ende.
+
+<Hinweis typ="info" titel="Wo liegt die Datei?">
+Linux und macOS: `~/.ssh/config`. Windows: `C:\Users\NAME\.ssh\config` (ohne Dateiendung!). Rechte unter Linux und
+macOS: `chmod 600 ~/.ssh/config`.
+</Hinweis>
+
+<Hinweis typ="tipp">
+Die SSH-Academy erzeugt für jeden deiner Server den passenden `config`-Block zum Kopieren.
+</Hinweis>

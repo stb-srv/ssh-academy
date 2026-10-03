@@ -1,0 +1,63 @@
+Unter Ubuntu und Debian gibt es zwei Befehle, um Benutzer anzulegen. Sie klingen fast gleich, verhalten sich aber
+unterschiedlich.
+
+| | `adduser` | `useradd` |
+|---|---|---|
+| Art | Freundliches Skript (Debian/Ubuntu) | Einfaches Systemwerkzeug (überall) |
+| Home-Verzeichnis | Wird angelegt | Nur mit `-m` |
+| Shell | `/bin/bash` | Oft `/bin/sh`, sonst `-s /bin/bash` |
+| Passwort | Fragt interaktiv | Muss separat mit `passwd` gesetzt werden |
+| Empfehlung | ✅ Für Menschen | Für Skripte und Automatisierung |
+
+## Mit adduser (empfohlen)
+
+```bash
+sudo adduser anna
+```
+
+```text
+Adding user `anna' ...
+Adding new group `anna' (1001) ...
+Adding new user `anna' (1001) with group `anna' ...
+Creating home directory `/home/anna' ...
+Copying files from `/etc/skel' ...
+New password:
+Retype new password:
+Full Name []: Anna Beispiel
+Room Number []:
+...
+Is the information correct? [Y/n] y
+```
+
+Die Fragen nach Name, Raum und Telefon kannst du mit Enter überspringen.
+
+<Hinweis typ="info" titel="Braucht der Benutzer ein Passwort?">
+Für den SSH-Login nicht, da nutzt du den Key. **sudo** fragt aber standardmäßig nach dem Passwort des Benutzers.
+Lege also ein gutes Passwort fest und speichere es im Passwort-Manager.
+</Hinweis>
+
+## Mit useradd (für Skripte)
+
+```bash
+sudo useradd -m -s /bin/bash -c "Anna Beispiel" anna
+sudo passwd anna
+```
+
+- `-m` legt `/home/anna` an,
+- `-s /bin/bash` setzt die Shell,
+- `-c` ist der Kommentar (voller Name).
+
+## Prüfen
+
+```bash
+id anna
+```
+
+```text
+uid=1001(anna) gid=1001(anna) groups=1001(anna)
+```
+
+<Hinweis typ="info">
+Benutzernamen: Kleinbuchstaben, Ziffern, `-` und `_`, beginnend mit einem Buchstaben. Keine Umlaute, keine
+Leerzeichen.
+</Hinweis>

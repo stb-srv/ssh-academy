@@ -1,0 +1,46 @@
+Du kannst dich bei SSH mit einem Passwort anmelden. Das funktioniert, hat aber echte Nachteile.
+
+## Das Problem mit Passwörtern
+
+Jeder Server mit offenem Port 22 wird **ständig** angegriffen. Bots probieren rund um die Uhr Benutzernamen und
+Passwörter durch. Auf einem frischen Server siehst du nach wenigen Minuten die ersten Versuche:
+
+```bash
+sudo journalctl -u ssh --since "1 hour ago" | grep "Failed password"
+```
+
+```text
+Failed password for root from 198.51.100.23 port 51234 ssh2
+Failed password for invalid user admin from 192.0.2.77 port 40112 ssh2
+```
+
+Ist dein Passwort schwach oder irgendwo schon einmal geleakt, ist es nur eine Frage der Zeit.
+
+## Was ein SSH-Key besser macht
+
+| | Passwort | SSH-Key |
+|---|---|---|
+| Erratbar | Ja, je nach Stärke | Praktisch unmöglich (256 Bit und mehr) |
+| Wird an den Server geschickt | Ja | Nein, nur eine Unterschrift |
+| Phishing möglich | Ja | Nein |
+| Bequem | Bei jedem Login tippen | Mit ssh-agent ohne Tippen |
+| Pro Gerät widerrufbar | Nein, ein Passwort für alle | Ja, ein Key pro Gerät |
+
+Der wichtigste Punkt: **Dein Geheimnis verlässt nie deinen Rechner.** Selbst ein gehackter Server kann deinen
+Private Key nicht stehlen.
+
+## Das Ziel dieses Kurses
+
+Am Ende wirst du:
+
+1. Einen SSH-Key auf deinem Rechner erzeugt haben.
+2. Den Public Key auf deinem Server hinterlegt haben.
+3. Einen eigenen Benutzer mit sudo-Rechten haben.
+4. Den Passwort-Login komplett abgeschaltet haben.
+
+Dann prallen alle Passwort-Angriffe einfach ab.
+
+<Hinweis typ="warnung">
+Schalte den Passwort-Login erst ab, wenn der Login mit Key nachweislich funktioniert. Sonst sperrst du dich aus.
+Das üben wir in Modul 7 Schritt für Schritt.
+</Hinweis>

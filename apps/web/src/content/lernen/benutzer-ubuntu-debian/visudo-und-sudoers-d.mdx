@@ -1,0 +1,66 @@
+Die Gruppe `sudo` gibt volle Rechte. Manchmal willst du feiner steuern, zum Beispiel: „Der Benutzer `deploy` darf
+nur den Webserver neu starten, ohne Passwort.“ Dafür gibt es die sudoers-Konfiguration.
+
+## Niemals direkt bearbeiten
+
+Die Hauptdatei `/etc/sudoers` bearbeitest du **nur** mit `visudo`. Es prüft die Syntax vor dem Speichern. Eine
+fehlerhafte Datei würde sudo komplett blockieren, und ohne root-Passwort kommst du dann nicht mehr an
+Verwaltungsrechte.
+
+Noch besser: Lass `/etc/sudoers` unverändert und lege eigene Dateien in `/etc/sudoers.d/` an:
+
+```bash
+sudo visudo -f /etc/sudoers.d/deploy
+```
+
+## Aufbau einer Regel
+
+```text
+WER   WO=(ALS_WER)   WAS
+anna  ALL=(ALL:ALL)  ALL
+```
+
+| Teil | Bedeutung |
+|---|---|
+| `anna` oder `%gruppe` | Benutzer oder (mit `%`) Gruppe |
+| `ALL=` | Gilt auf allen Rechnern (fast immer `ALL`) |
+| `(ALL:ALL)` | Darf als jeder Benutzer und jede Gruppe handeln |
+| `ALL` am Ende | Darf alle Befehle |
+
+## Beispiele
+
+Nur bestimmte Befehle, ohne Passwort:
+
+```text
+deploy ALL=(root) NOPASSWD: /usr/bin/systemctl restart nginx, /usr/bin/systemctl reload nginx
+```
+
+Eine Gruppe mit vollen Rechten (so ist die Gruppe sudo bereits eingerichtet):
+
+```text
+%sudo ALL=(ALL:ALL) ALL
+```
+
+## NOPASSWD: wann ok, wann nicht
+
+| Situation | NOPASSWD? |
+|---|---|
+| Automatischer Deploy-Benutzer mit genau festgelegten Befehlen | ✅ Ja |
+| Dein persönlicher Admin-Benutzer | ⚠️ Möglich, aber dann schützt nur noch dein SSH-Key |
+| `NOPASSWD: ALL` für einen Dienst-Benutzer | ❌ Nein |
+
+<Hinweis typ="warnung" titel="Dateinamen in sudoers.d">
+Dateien in `/etc/sudoers.d/` werden **ignoriert**, wenn ihr Name einen Punkt enthält oder mit `~` endet. Also
+`deploy`, nicht `deploy.conf`. Rechte: `0440`. visudo setzt sie korrekt.
+</Hinweis>
+
+## Syntax aller Dateien prüfen
+
+```bash
+sudo visudo -c
+```
+
+```text
+/etc/sudoers: parsed OK
+/etc/sudoers.d/deploy: parsed OK
+```

@@ -34,6 +34,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm typecheck
       - run: pnpm lint
+      - run: pnpm test
       - name: Migrationen gegen leere Datenbank
         run: pnpm db:migrate
       - name: Schema und Migrationen stimmen überein
@@ -52,3 +53,4 @@ jobs:
         run: |
           docker build --target migrate -t ssh-academy-migrate .
           docker build --target web -t ssh-academy-web .
+          docker build --target gateway -t ssh-academy-gateway .

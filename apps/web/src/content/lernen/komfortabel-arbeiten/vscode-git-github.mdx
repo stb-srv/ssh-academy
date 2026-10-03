@@ -1,0 +1,64 @@
+Dein SSH-Key ist nicht nur für die Kommandozeile nützlich. Viele Programme benutzen ihn mit.
+
+## VS Code: Remote-SSH
+
+Mit der Erweiterung **Remote - SSH** bearbeitest du Dateien direkt auf dem Server, als lägen sie lokal.
+
+1. Erweiterung „Remote - SSH“ von Microsoft installieren.
+2. `F1` drücken und **Remote-SSH: Connect to Host…** wählen.
+3. Alle Kurznamen aus deiner `~/.ssh/config` werden angezeigt. Einfach `web` auswählen.
+
+VS Code benutzt dabei deinen ssh-agent. Funktioniert `ssh web` im Terminal, funktioniert auch VS Code.
+
+## Git und GitHub
+
+GitHub, GitLab, Gitea und Forgejo akzeptieren SSH-Keys für `git clone`, `git push` und `git pull`.
+
+1. Public Key anzeigen: `cat ~/.ssh/id_ed25519.pub`
+2. Bei GitHub: **Settings → SSH and GPG keys → New SSH key**, Inhalt einfügen.
+3. Testen:
+
+```bash
+ssh -T git@github.com
+```
+
+```text
+Hi anna! You've successfully authenticated, but GitHub does not provide shell access.
+```
+
+4. Repositories mit der SSH-Adresse klonen:
+
+```bash
+git clone git@github.com:anna/projekt.git
+```
+
+### Verschiedene Keys für Arbeit und Privat
+
+```text
+Host github-arbeit
+  HostName github.com
+  User git
+  IdentityFile ~/.ssh/id_ed25519_arbeit
+  IdentitiesOnly yes
+```
+
+```bash
+git clone git@github-arbeit:firma/projekt.git
+```
+
+## Commits mit dem SSH-Key signieren
+
+Git kann Commits auch mit deinem SSH-Key unterschreiben (Git 2.34+):
+
+```bash
+git config --global gpg.format ssh
+git config --global user.signingkey ~/.ssh/id_ed25519.pub
+git config --global commit.gpgsign true
+```
+
+Bei GitHub hinterlegst du denselben Key zusätzlich als **Signing Key**, dann erscheinen deine Commits als „Verified“.
+
+<Hinweis typ="tipp">
+Bei GitHub sind deine Public Keys öffentlich unter `https://github.com/NAME.keys` abrufbar. Das ist praktisch, um
+sie auf neue Server zu laden.
+</Hinweis>

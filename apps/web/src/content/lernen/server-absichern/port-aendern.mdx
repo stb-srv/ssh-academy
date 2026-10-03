@@ -1,0 +1,78 @@
+Ein anderer Port als 22 macht deinen Server nicht sicherer, aber **ruhiger**: Die meisten automatischen
+Angriffsversuche zielen auf Port 22, die Logs werden übersichtlicher. Wirklich schützen tut dich der Key-Login.
+
+<Hinweis typ="warnung">
+Öffne den neuen Port in der Firewall, **bevor** du SSH umstellst. Sonst sperrst du dich aus.
+</Hinweis>
+
+## Welches Verfahren nutzt dein System?
+
+Seit **Ubuntu 22.10** (also auch 24.04) startet SSH per **Socket Activation**: systemd lauscht auf dem Port und
+startet sshd erst bei Bedarf. Dann bestimmt `ssh.socket` den Port, und die Zeile `Port` in `sshd_config` wirkt
+nur noch indirekt.
+
+```bash
+systemctl is-active ssh.socket
+```
+
+- `active` → Variante A (Ubuntu 24.04 und neuer)
+- `inactive` → Variante B (Debian, ältere Ubuntu-Versionen)
+
+## Variante A: Ubuntu mit ssh.socket
+
+Ab Ubuntu 24.04 übernimmt ein Generator den Port aus der sshd-Konfiguration. Trag ihn also wie gewohnt ein und lass
+systemd neu einlesen:
+
+```bash
+echo "Port 2222" | sudo tee /etc/ssh/sshd_config.d/02-port.conf
+sudo systemctl daemon-reload
+sudo systemctl restart ssh.socket
+```
+
+Funktioniert das auf deinem System nicht (ältere Zwischenversionen), setzt du den Port direkt am Socket:
+
+```bash
+sudo systemctl edit ssh.socket
+```
+
+```text
+[Socket]
+ListenStream=
+ListenStream=2222
+```
+
+Die leere `ListenStream=`-Zeile löscht den Standard-Port 22. Danach:
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl restart ssh.socket
+```
+
+## Variante B: Debian und klassisches sshd
+
+```bash
+echo "Port 2222" | sudo tee /etc/ssh/sshd_config.d/02-port.conf
+sudo sshd -t && sudo systemctl restart ssh
+```
+
+## Prüfen
+
+```bash
+sudo ss -tlnp | grep -E ':22|:2222'
+```
+
+Danach aus einem **neuen** Fenster:
+
+```bash
+ssh -p 2222 anna@203.0.113.10
+```
+
+Und in `~/.ssh/config` ergänzen, damit du den Port nicht immer angeben musst:
+
+```text
+Host web
+  HostName 203.0.113.10
+  Port 2222
+```
+
+Erst wenn alles klappt, den alten Port 22 in der Firewall schließen.

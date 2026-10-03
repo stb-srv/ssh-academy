@@ -1,0 +1,52 @@
+Oft erreichst du einen Server nur über einen anderen, zum Beispiel weil die Datenbank nicht direkt im Internet
+hängt. Dafür gibt es zwei Ansätze, von denen einer deutlich sicherer ist.
+
+## Agent-Forwarding (-A): bequem, aber riskant
+
+```bash
+ssh -A anna@sprungserver
+# auf dem Sprungserver:
+ssh anna@datenbank
+```
+
+Mit `-A` leitet SSH deinen **Agent** an den ersten Server weiter. Von dort aus kannst du dich mit deinem Key weiter
+verbinden, obwohl der Key nicht auf dem Server liegt.
+
+Das Problem: Solange du verbunden bist, kann **jeder mit root-Rechten auf dem Sprungserver** deinen Agent benutzen
+und sich damit überall anmelden, wo dein Key gilt. Der Key selbst wird zwar nicht kopiert, aber benutzt.
+
+## ProxyJump (-J): die bessere Lösung
+
+```bash
+ssh -J anna@sprungserver anna@datenbank
+```
+
+Hier baut dein Rechner die Verbindung zur Datenbank **selbst** auf, nur durch den Sprungserver hindurch. Der
+Sprungserver sieht nur verschlüsselte Daten und bekommt keinen Zugriff auf deinen Agent.
+
+In `~/.ssh/config`:
+
+```text
+Host sprung
+  HostName 203.0.113.20
+  User anna
+
+Host datenbank
+  HostName 10.0.0.5
+  User anna
+  ProxyJump sprung
+```
+
+Danach genügt `ssh datenbank`.
+
+| | Agent-Forwarding | ProxyJump |
+|---|---|---|
+| Agent auf Zwischen-Server erreichbar | Ja | Nein |
+| Key muss auf Zwischen-Server liegen | Nein | Nein |
+| Verbindung endet auf Zwischen-Server | Ja | Nein, geht durch |
+| Empfehlung | Nur wenn unvermeidbar | ✅ Standard |
+
+<Hinweis typ="warnung">
+Setze niemals `ForwardAgent yes` unter `Host *`. Wenn du Agent-Forwarding brauchst (z. B. für `git pull` auf einem
+Server), dann nur für genau diesen Server und am besten mit `ssh-add -c`, damit jede Nutzung bestätigt werden muss.
+</Hinweis>

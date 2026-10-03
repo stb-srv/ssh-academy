@@ -1,0 +1,51 @@
+Ein **Jump-Host** (auch Bastion) ist ein einzelner, gut gesicherter Server, über den alle anderen Server erreicht
+werden. Nur er ist per SSH aus dem Internet erreichbar.
+
+## Warum das sinnvoll ist
+
+- Nur **ein** Server muss nach außen offen sein und besonders gut überwacht werden.
+- Alle anderen Server lassen SSH nur aus dem internen Netz zu.
+- Zugriffe lassen sich an einer Stelle protokollieren und sperren.
+
+```text
+Internet ──► Jump-Host (203.0.113.20) ──► web (10.0.0.10)
+                                       ├─► db  (10.0.0.11)
+                                       └─► app (10.0.0.12)
+```
+
+## Einrichten auf deinem Rechner
+
+```text
+Host bastion
+  HostName 203.0.113.20
+  User anna
+
+Host 10.0.0.*
+  User anna
+  ProxyJump bastion
+```
+
+Danach funktioniert direkt `ssh 10.0.0.11`, auch mit `scp` und `rsync`.
+
+## Den Jump-Host absichern
+
+| Maßnahme | Wie |
+|---|---|
+| Nur Key-Login | `PasswordAuthentication no` (Modul 7) |
+| Nur weiterleiten, keine Shell | In `sshd_config` für Jump-Benutzer: `ForceCommand /bin/false` plus `PermitTTY no` (ProxyJump funktioniert trotzdem) |
+| Nur bestimmte Benutzer | `AllowGroups jumpusers` |
+| Firewall auf den Zielen | SSH nur von der IP des Jump-Hosts erlauben |
+
+Beispiel für eine Gruppe, die nur durchspringen darf:
+
+```text
+Match Group jumpusers
+  AllowTcpForwarding yes
+  X11Forwarding no
+  PermitTTY no
+  ForceCommand /bin/false
+```
+
+<Hinweis typ="info">
+Mehrere Sprünge hintereinander sind möglich: `ProxyJump bastion1,bastion2`.
+</Hinweis>

@@ -1,0 +1,41 @@
+Sobald mehrere Menschen auf mehrere Server zugreifen, braucht es Regeln. Sonst weiß nach einem Jahr niemand mehr,
+wem welcher Key gehört.
+
+## Grundregeln
+
+1. **Ein Key pro Person und Gerät.** Niemals Keys teilen, auch nicht „nur kurz“.
+2. **Sprechende Kommentare:** `vorname.nachname@geraet-jahr`, z. B. `anna.beispiel@laptop-2026`.
+3. **Eigene Benutzer statt root.** So zeigt das Log, wer was getan hat.
+4. **Passphrase oder Hardware-Key** für alle persönlichen Keys.
+5. **Dienst-Keys einschränken** mit `restrict`, `from=` und `command=`.
+6. **Regelmäßig prüfen:** Welche Keys liegen wo? Gehören sie noch zu aktiven Personen?
+
+## Offboarding-Checkliste
+
+Wenn jemand das Team verlässt:
+
+- [ ] Alle Keys der Person auf allen Servern entfernen
+- [ ] Eigenen Benutzer sperren (`usermod -L -e 1`) oder löschen
+- [ ] Aus Gruppen wie `sudo` entfernen
+- [ ] Geteilte Passwörter (falls es sie gibt) ändern
+- [ ] Zugänge bei Git-Hostern und Hostern entziehen
+
+## Ein Inventar führen
+
+Mindestens eine Liste: Person, Key-Fingerprint, Server, Benutzer, seit wann. Mit vielen Servern hilft ein
+Werkzeug:
+
+| Ansatz | Geeignet für |
+|---|---|
+| Liste + Skripte | Wenige Server, kleines Team |
+| Ansible (`authorized_key`-Modul) | Viele Server, Infrastruktur als Code |
+| SSH-Zertifikate | Große Teams, kurzlebige Zugänge |
+| **SSH-Academy** | Teams mit Rollen, Freigaben, Audit-Log und automatischem Offboarding |
+
+## So bildet die SSH-Academy das ab
+
+- **Teams** mit Rollen (Besitzer, Admin, Operator, Mitglied, Betrachter).
+- **Nutzergruppen** (z. B. „Entwickler“) und **Server-Gruppen** (z. B. „Produktion“).
+- **Freigaben:** „Gruppe Entwickler darf auf Server-Gruppe Test als Benutzer deploy“.
+- **Audit-Log:** wer wann welchen Key verteilt hat und wer sich wohin verbunden hat.
+- **Offboarding:** Entfernt man jemanden aus dem Team, verschwinden seine Keys von allen Team-Servern.

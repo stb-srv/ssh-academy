@@ -1,0 +1,62 @@
+Benutzer kommen und gehen. So sperrst, löschst und verwaltest du sie sauber.
+
+## Sperren (vorübergehend)
+
+```bash
+sudo usermod -L -e 1 anna
+```
+
+- `-L` sperrt das Passwort,
+- `-e 1` setzt das Ablaufdatum des Kontos in die Vergangenheit. Damit ist auch der **SSH-Key-Login** gesperrt.
+
+Nur das Passwort zu sperren reicht nicht, ein Key funktioniert sonst weiter.
+
+Entsperren:
+
+```bash
+sudo usermod -U -e "" anna
+```
+
+## Löschen
+
+```bash
+sudo deluser --remove-home anna
+```
+
+- `--remove-home` löscht auch `/home/anna` (inklusive `authorized_keys`).
+- Willst du die Daten aufheben, sichere sie vorher: `sudo tar czf /root/anna-home.tar.gz /home/anna`.
+
+Laufende Prozesse von anna vorher beenden:
+
+```bash
+sudo pkill -u anna
+```
+
+## Gruppen
+
+| Aufgabe | Befehl |
+|---|---|
+| Gruppen eines Benutzers anzeigen | `groups anna` |
+| Neue Gruppe anlegen | `sudo addgroup entwickler` |
+| Benutzer zur Gruppe hinzufügen | `sudo usermod -aG entwickler anna` |
+| Benutzer aus Gruppe entfernen | `sudo deluser anna entwickler` |
+| sudo-Rechte entziehen | `sudo deluser anna sudo` |
+| Alle Mitglieder einer Gruppe | `getent group sudo` |
+
+## Wer hat sich wann angemeldet?
+
+```bash
+last -n 10
+sudo journalctl -u ssh --since today | grep Accepted
+```
+
+```text
+Accepted publickey for anna from 198.51.100.7 port 51515 ssh2: ED25519 SHA256:Wm5a...
+```
+
+Der Fingerprint am Ende zeigt dir sogar, **welcher Key** benutzt wurde.
+
+<Hinweis typ="info">
+Auf allen Servern einzeln Benutzer zu pflegen wird schnell unübersichtlich. Mit Teams und Freigaben in der
+SSH-Academy entziehst du einer Person den Zugriff auf alle Team-Server mit einem Klick.
+</Hinweis>

@@ -1,0 +1,64 @@
+Wenn SSH nicht will, hilft systematisches Vorgehen. Die meisten Probleme lassen sich mit zwei Werkzeugen klären:
+`ssh -v` auf deinem Rechner und dem Log auf dem Server.
+
+## Schritt 1: Ausführliche Ausgabe auf dem Client
+
+```bash
+ssh -v anna@203.0.113.10
+```
+
+Wichtige Zeilen:
+
+```text
+debug1: Connecting to 203.0.113.10 port 22.
+debug1: Connection established.
+debug1: Server host key: ssh-ed25519 SHA256:nThbg6kXUpJWGl7E1IGOCspRomTxdCARLviKw6E5SY8
+debug1: Authentications that can continue: publickey
+debug1: Offering public key: /home/anna/.ssh/id_ed25519 ED25519 SHA256:Wm5a... agent
+debug1: Server accepts key: /home/anna/.ssh/id_ed25519 ED25519 SHA256:Wm5a... agent
+Authenticated to 203.0.113.10 ([203.0.113.10]:22) using "publickey".
+```
+
+Mehr Details mit `-vv` oder `-vvv`.
+
+## Schritt 2: Log auf dem Server
+
+```bash
+sudo journalctl -u ssh -f
+```
+
+Lass das laufen und versuche dich parallel anzumelden.
+
+## Häufige Fehler und Lösungen
+
+| Meldung | Ursache | Lösung |
+|---|---|---|
+| `Connection refused` | sshd läuft nicht oder falscher Port | `systemctl status ssh`, Port prüfen |
+| `Connection timed out` | Firewall oder falsche IP | Firewall/Sicherheitsgruppe beim Hoster prüfen |
+| `Permission denied (publickey)` | Key nicht akzeptiert | Siehe unten |
+| `Too many authentication failures` | Agent bietet zu viele Keys an | `IdentitiesOnly yes` und `IdentityFile` setzen |
+| `UNPROTECTED PRIVATE KEY FILE` | Rechte des Private Keys zu offen | `chmod 600 ~/.ssh/id_ed25519` |
+| `REMOTE HOST IDENTIFICATION HAS CHANGED` | Host-Key anders | Grund klären, dann `ssh-keygen -R host` |
+| `Host key verification failed` | Host-Key unbekannt im Batch-Modus | Einmal interaktiv verbinden |
+| `no matching host key type found` | Sehr alter Server | Client mit `-o HostKeyAlgorithms=+ssh-rsa` (nur übergangsweise) |
+
+## Checkliste für „Permission denied (publickey)“
+
+1. Bietet der Client den richtigen Key an? (`Offering public key` in `ssh -v`)
+2. Steht genau dieser Key auf dem Server? Fingerprints vergleichen:
+
+```bash
+ssh-keygen -lf ~/.ssh/id_ed25519.pub            # auf deinem Rechner
+ssh-keygen -lf ~/.ssh/authorized_keys           # auf dem Server
+```
+
+3. Richtiger Benutzer? (`anna@`, nicht `root@`)
+4. Rechte und Besitzer von Home, `.ssh` und `authorized_keys`?
+5. Server-Log: `Authentication refused: bad ownership or modes`?
+6. `AllowUsers`/`AllowGroups` in der sshd-Konfiguration?
+7. Key-Typ erlaubt? (`sshd -T | grep pubkeyacceptedalgorithms`)
+
+<Hinweis typ="tipp">
+Der <a href="/werkzeuge/fehler-doktor">Fehler-Doktor</a> erklärt dir eingefügte Fehlermeldungen und schlägt die
+passende Lösung vor.
+</Hinweis>

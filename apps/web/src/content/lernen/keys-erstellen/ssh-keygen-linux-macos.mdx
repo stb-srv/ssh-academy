@@ -1,0 +1,67 @@
+Unter Linux und macOS ist alles Nötige bereits installiert. Ein Befehl genügt.
+
+## Schritt 1: Key erzeugen
+
+Öffne das Terminal und gib ein:
+
+```bash
+ssh-keygen -t ed25519 -C "anna@laptop"
+```
+
+- `-t ed25519` wählt den Key-Typ.
+- `-C "anna@laptop"` ist ein Kommentar. Nimm etwas, woran du später erkennst, **wem** und **welchem Gerät** der
+  Key gehört.
+
+## Schritt 2: Die Fragen beantworten
+
+```text
+Generating public/private ed25519 key pair.
+Enter file in which to save the key (/home/anna/.ssh/id_ed25519):
+```
+
+Einfach **Enter** drücken, dann landet der Key am Standardort. Nur wenn dort schon ein Key liegt, gibst du einen
+anderen Namen an, zum Beispiel `/home/anna/.ssh/id_ed25519_arbeit`.
+
+```text
+Enter passphrase (empty for no passphrase):
+Enter same passphrase again:
+```
+
+Hier legst du eine **Passphrase** fest. Beim Tippen siehst du keine Zeichen, das ist normal. Warum eine
+Passphrase sinnvoll ist, erklärt die übernächste Lektion.
+
+## Schritt 3: Ergebnis ansehen
+
+```text
+Your identification has been saved in /home/anna/.ssh/id_ed25519
+Your public key has been saved in /home/anna/.ssh/id_ed25519.pub
+The key fingerprint is:
+SHA256:Wm5aJp0fS7k5w0nI6c0Tq4t1ZpK0z3gq0p3m2K6p5Hc anna@laptop
+```
+
+Deinen Public Key zeigst du so an:
+
+```bash
+cat ~/.ssh/id_ed25519.pub
+```
+
+Diese eine Zeile kopierst du später auf Server. Den Private Key `~/.ssh/id_ed25519` öffnest du nie und gibst ihn
+nie weiter.
+
+## Bonus: Fingerprint jederzeit anzeigen
+
+```bash
+ssh-keygen -lf ~/.ssh/id_ed25519.pub
+```
+
+So vergleichst du zum Beispiel, ob der Key auf dem Server derselbe ist wie auf deinem Rechner.
+
+<Hinweis typ="tipp">
+Keinen Rechner zur Hand? Unter <a href="/werkzeuge/key-generator">Werkzeuge → Key-Generator</a> kannst du im
+Browser ausprobieren, wie ein Schlüsselpaar aussieht. Der Key entsteht nur in deinem Browser.
+</Hinweis>
+
+<Hinweis typ="info" titel="macOS: Passphrase im Schlüsselbund speichern">
+Mit `ssh-add --apple-use-keychain ~/.ssh/id_ed25519` merkt sich macOS die Passphrase im Schlüsselbund. Mehr dazu in
+Modul 4.
+</Hinweis>

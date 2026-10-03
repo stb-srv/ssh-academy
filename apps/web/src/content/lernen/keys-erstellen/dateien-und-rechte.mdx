@@ -1,0 +1,69 @@
+SSH ist bei Dateirechten streng. Sind sie zu offen, verweigert es den Dienst. Hier ist die komplette Übersicht.
+
+## Auf deinem Rechner
+
+| Pfad | Inhalt | Rechte |
+|---|---|---|
+| `~/.ssh/` | Ordner für alles rund um SSH | `700` (drwx------) |
+| `~/.ssh/id_ed25519` | Private Key | `600` (-rw-------) |
+| `~/.ssh/id_ed25519.pub` | Public Key | `644` (-rw-r--r--) |
+| `~/.ssh/config` | Deine Einstellungen (Modul 4) | `600` |
+| `~/.ssh/known_hosts` | Bekannte Server | `644` |
+
+## Auf dem Server
+
+| Pfad | Inhalt | Rechte |
+|---|---|---|
+| `/home/anna/` | Home-Verzeichnis | höchstens `755`, nicht für andere beschreibbar |
+| `/home/anna/.ssh/` | Ordner | `700` |
+| `/home/anna/.ssh/authorized_keys` | Erlaubte Public Keys | `600` |
+
+Alles muss außerdem dem richtigen Benutzer **gehören**.
+
+## Rechte korrigieren
+
+<OsTabs>
+<Os name="unix">
+
+```bash
+chmod 700 ~/.ssh
+chmod 600 ~/.ssh/id_ed25519 ~/.ssh/config
+chmod 644 ~/.ssh/id_ed25519.pub
+```
+
+Auf dem Server (als der jeweilige Benutzer):
+
+```bash
+chmod 700 ~/.ssh
+chmod 600 ~/.ssh/authorized_keys
+```
+
+</Os>
+<Os name="windows">
+
+Windows nutzt keine Zahlen wie `600`, sondern Zugriffslisten. Der eingebaute OpenSSH-Client ist zufrieden, wenn nur
+dein Benutzer, SYSTEM und Administratoren Zugriff haben. Das ist im Benutzerordner normalerweise der Fall. Falls
+nicht:
+
+```powershell
+icacls $env:USERPROFILE\.ssh\id_ed25519 /inheritance:r /grant:r "$($env:USERNAME):F"
+```
+
+</Os>
+</OsTabs>
+
+## Typische Fehlermeldung
+
+```text
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@         WARNING: UNPROTECTED PRIVATE KEY FILE!          @
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+Permissions 0644 for '/home/anna/.ssh/id_ed25519' are too open.
+```
+
+Lösung: `chmod 600 ~/.ssh/id_ed25519`.
+
+<Hinweis typ="tipp">
+Der <a href="/werkzeuge/rechte">Rechte-Checker</a> zeigt dir für jede Datei die richtigen Rechte und den passenden
+Befehl.
+</Hinweis>

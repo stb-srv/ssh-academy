@@ -52,3 +52,78 @@ body {
   outline: 2px solid var(--primary);
   outline-offset: 2px;
 }
+
+/* --- Betriebssystem-Tabs: nur das passende Panel zeigen ---------------------------------- */
+[data-os="linux"] [data-os-panel]:not([data-os-panel="linux"]):not([data-os-panel="unix"]),
+[data-os="macos"] [data-os-panel]:not([data-os-panel="macos"]):not([data-os-panel="unix"]),
+[data-os="windows"] [data-os-panel]:not([data-os-panel="windows"]) {
+  display: none;
+}
+/* Gibt es ein eigenes macOS-Panel, wird das gemeinsame Unix-Panel ausgeblendet */
+[data-os="macos"]:has([data-os-panel="macos"]) [data-os-panel="unix"],
+[data-os="linux"]:has([data-os-panel="linux"]) [data-os-panel="unix"] {
+  display: none;
+}
+
+/* --- Lesetext der Lektionen ---------------------------------------------------------------- */
+.lesson {
+  line-height: 1.75;
+}
+.lesson h2 {
+  margin-top: 2.25rem;
+  margin-bottom: 0.75rem;
+  font-size: 1.4rem;
+  font-weight: 700;
+}
+.lesson h3 {
+  margin-top: 1.75rem;
+  margin-bottom: 0.5rem;
+  font-size: 1.15rem;
+  font-weight: 600;
+}
+.lesson p,
+.lesson ul,
+.lesson ol {
+  margin: 0.9rem 0;
+}
+.lesson ul {
+  list-style: disc;
+  padding-left: 1.4rem;
+}
+.lesson ol {
+  list-style: decimal;
+  padding-left: 1.4rem;
+}
+.lesson li + li {
+  margin-top: 0.3rem;
+}
+.lesson a {
+  color: var(--primary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.lesson :not(pre) > code {
+  border-radius: 0.3rem;
+  background: color-mix(in srgb, var(--border) 60%, transparent);
+  padding: 0.1rem 0.35rem;
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 0.88em;
+}
+.lesson table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+.lesson th,
+.lesson td {
+  border: 1px solid var(--border);
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+  vertical-align: top;
+}
+.lesson th {
+  background: var(--card);
+}
+.lesson strong {
+  font-weight: 600;
+}

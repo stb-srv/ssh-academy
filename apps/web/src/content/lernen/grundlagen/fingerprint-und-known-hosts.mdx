@@ -1,0 +1,61 @@
+Nicht nur du hast einen Schlüssel. Auch jeder **Server** hat ein eigenes Schlüsselpaar, den **Host-Key**. Damit
+beweist der Server, dass er wirklich der Server ist, mit dem du sprechen willst.
+
+## Die Frage beim ersten Verbinden
+
+Wenn du dich zum ersten Mal mit einem Server verbindest, siehst du:
+
+```text
+The authenticity of host '203.0.113.10 (203.0.113.10)' can't be established.
+ED25519 key fingerprint is SHA256:nThbg6kXUpJWGl7E1IGOCspRomTxdCARLviKw6E5SY8.
+Are you sure you want to continue connecting (yes/no/[fingerprint])?
+```
+
+Übersetzt: „Ich kenne diesen Server noch nicht. Sein Fingerabdruck ist …. Willst du ihm vertrauen?“
+
+Der **Fingerprint** ist eine kurze Prüfsumme des Host-Keys. Viele tippen hier blind `yes`. Richtig wäre es, den
+Fingerprint zu vergleichen:
+
+- Viele Hoster zeigen ihn in der Weboberfläche oder in der Server-Konsole an.
+- Hast du bereits Zugang über die Konsole des Hosters, kannst du ihn dort selbst auslesen:
+
+```bash
+ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub
+```
+
+Stimmen beide überein, tippst du `yes`. Du kannst auch den Fingerprint selbst einfügen, dann vergleicht SSH für dich.
+
+## known_hosts: das Gedächtnis deines Rechners
+
+Nach dem `yes` speichert SSH den Host-Key in `~/.ssh/known_hosts`. Beim nächsten Mal wird nicht mehr gefragt, aber
+**geprüft**. Ändert sich der Key, schlägt SSH Alarm:
+
+```text
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@    WARNING: REMOTE HOST IDENTIFICATION HAS CHANGED!     @
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+IT IS POSSIBLE THAT SOMEONE IS DOING SOMETHING NASTY!
+```
+
+Das kann zwei Gründe haben:
+
+| Grund | Was tun |
+|---|---|
+| Du hast den Server neu installiert oder die IP wurde neu vergeben | Alten Eintrag entfernen und neuen Fingerprint prüfen |
+| Jemand fängt die Verbindung ab (Man-in-the-Middle) | **Nicht** verbinden, Ursache klären |
+
+Den alten Eintrag entfernst du so:
+
+```bash
+ssh-keygen -R 203.0.113.10
+```
+
+<Hinweis typ="warnung">
+Lösche Einträge nur, wenn du den Grund für die Änderung kennst. Die Warnung ist eine der wichtigsten
+Schutzfunktionen von SSH.
+</Hinweis>
+
+<Hinweis typ="tipp">
+In der SSH-Academy siehst du beim Hinzufügen eines Servers ebenfalls den Fingerprint und musst ihn bestätigen.
+Ändert er sich später, blockiert die Plattform die Verbindung genau wie SSH.
+</Hinweis>

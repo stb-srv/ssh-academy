@@ -37,12 +37,35 @@ services:
     env_file: .env
     environment:
       DATABASE_URL: postgres://ssh_academy:${POSTGRES_PASSWORD}@db:5432/ssh_academy
+      GATEWAY_INTERNAL_URL: http://gateway:4000
     depends_on:
       db: { condition: service_healthy }
       migrate: { condition: service_completed_successfully }
+      gateway: { condition: service_started }
     networks: [internal, web]
     # Ohne Caddy (z. B. hinter einem vorhandenen Reverse Proxy): Port freigeben
     # ports: ["3000:3000"]
+
+  # SSH-Gateway: einzige Komponente, die SSH-Verbindungen zu euren Servern aufbaut und Private Keys
+  # entschlüsseln kann. Der Tresor-Schlüssel liegt im Volume gateway-data: unbedingt mitsichern!
+  gateway:
+    build: { context: ., target: gateway }
+    image: ssh-academy-gateway:latest
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgres://ssh_academy:${POSTGRES_PASSWORD}@db:5432/ssh_academy
+      GATEWAY_INTERNAL_TOKEN: ${GATEWAY_INTERNAL_TOKEN:?GATEWAY_INTERNAL_TOKEN fehlt in .env}
+      APP_URL: ${APP_URL}
+      SSH_ALLOWED_NETWORKS: ${SSH_ALLOWED_NETWORKS:-}
+      SSH_MAX_SESSIONS_PER_USER: ${SSH_MAX_SESSIONS_PER_USER:-5}
+      SSH_MAX_RECORDING_MB: ${SSH_MAX_RECORDING_MB:-20}
+    volumes:
+      - gateway-data:/data
+    depends_on:
+      db: { condition: service_healthy }
+      migrate: { condition: service_completed_successfully }
+    # internal: Datenbank und Web-App; web: ausgehende SSH-Verbindungen zu euren Servern
+    networks: [internal, web]
 
   caddy:
     image: caddy:2-alpine
@@ -58,11 +81,12 @@ services:
       - ./infra/Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy-data:/data
       - caddy-config:/config
-    depends_on: [web]
+    depends_on: [web, gateway]
     networks: [web]
 
 volumes:
   db-data:
+  gateway-data:
   caddy-data:
   caddy-config:
 

@@ -1,0 +1,62 @@
+Windows 10 und 11 bringen OpenSSH bereits mit. Du brauchst also kein Zusatzprogramm.
+
+## Variante A: OpenSSH in PowerShell (empfohlen)
+
+1. Startmenü öffnen, **PowerShell** eintippen und starten (keine Administratorrechte nötig).
+2. Key erzeugen:
+
+```powershell
+ssh-keygen -t ed25519 -C "anna@windows-pc"
+```
+
+3. Mit **Enter** den Standardort bestätigen und eine Passphrase festlegen.
+
+Die Dateien liegen danach hier:
+
+```text
+C:\Users\anna\.ssh\id_ed25519
+C:\Users\anna\.ssh\id_ed25519.pub
+```
+
+Den Public Key anzeigen und direkt in die Zwischenablage kopieren:
+
+```powershell
+Get-Content $env:USERPROFILE\.ssh\id_ed25519.pub | Set-Clipboard
+```
+
+### ssh-agent unter Windows einschalten
+
+Damit du die Passphrase nicht bei jeder Verbindung eingeben musst, aktivierst du einmalig den Agent-Dienst. Dafür
+brauchst du **PowerShell als Administrator**:
+
+```powershell
+Get-Service ssh-agent | Set-Service -StartupType Automatic
+Start-Service ssh-agent
+```
+
+Danach in einer normalen PowerShell:
+
+```powershell
+ssh-add $env:USERPROFILE\.ssh\id_ed25519
+```
+
+## Variante B: PuTTY und PuTTYgen
+
+Manche nutzen lieber PuTTY. PuTTY verwendet ein eigenes Dateiformat (`.ppk`).
+
+1. **PuTTYgen** starten (wird mit PuTTY installiert).
+2. Unten bei „Type of key“ **EdDSA** und rechts **Ed25519** wählen.
+3. **Generate** klicken und die Maus im leeren Feld bewegen.
+4. Kommentar und Passphrase eintragen.
+5. **Save private key** speichert die `.ppk`-Datei für PuTTY.
+6. Den Text oben im Feld „Public key for pasting into OpenSSH authorized_keys file“ kopierst du auf den Server.
+
+<Hinweis typ="tipp" titel="Von PuTTY zu OpenSSH wechseln">
+Einen vorhandenen `.ppk`-Key kannst du in PuTTYgen laden und über **Conversions → Export OpenSSH key** in das
+OpenSSH-Format umwandeln. Dann funktioniert er auch in PowerShell, VS Code und Git.
+</Hinweis>
+
+<Hinweis typ="warnung">
+Speichere Keys nicht in synchronisierten Ordnern wie OneDrive oder Dropbox. Dort liegen sie sonst zusätzlich in
+der Cloud.
+</Hinweis>

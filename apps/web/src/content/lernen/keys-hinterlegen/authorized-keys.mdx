@@ -1,0 +1,60 @@
+Damit ein Server deinen Key akzeptiert, muss dein **Public Key** in einer bestimmten Datei stehen:
+
+```text
+/home/BENUTZER/.ssh/authorized_keys
+```
+
+Für root ist das `/root/.ssh/authorized_keys`.
+
+## Aufbau
+
+Jede Zeile ist ein erlaubter Key. Leerzeilen und Zeilen mit `#` am Anfang werden ignoriert.
+
+```text
+# Annas Laptop
+ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGZp1xRk8xV3pJ0y0w8Kx7m4pHq0Qe0a9QWm3Tq8Zl8b anna@laptop
+# Annas YubiKey
+sk-ssh-ed25519@openssh.com AAAAGnNrLXNzaC1lZDI1NTE5QG9wZW5zc2guY29tAAAAI... anna@yubikey
+```
+
+Wichtig: **eine Zeile pro Key**, ohne Zeilenumbrüche mittendrin. Beim Kopieren aus manchen Programmen entstehen
+versehentlich Umbrüche, dann funktioniert der Key nicht.
+
+## Rechte und Besitzer
+
+```bash
+ls -la ~/.ssh
+```
+
+```text
+drwx------ 2 anna anna 4096 Okt  3 12:00 .
+-rw------- 1 anna anna  101 Okt  3 12:00 authorized_keys
+```
+
+- Ordner `.ssh`: `700`, gehört `anna`.
+- Datei `authorized_keys`: `600`, gehört `anna`.
+- Auch das Home-Verzeichnis darf nicht für andere beschreibbar sein.
+
+Stimmt etwas nicht, ignoriert `sshd` die Datei **stillschweigend**. Der Grund steht nur im Log des Servers:
+
+```bash
+sudo journalctl -u ssh -n 20
+```
+
+```text
+Authentication refused: bad ownership or modes for directory /home/anna/.ssh
+```
+
+<Hinweis typ="info">
+Auf Ubuntu heißt der Dienst `ssh`, auf manchen anderen Systemen `sshd`. Bei Debian und Ubuntu funktioniert
+`journalctl -u ssh`.
+</Hinweis>
+
+## Wie kommt der Key dort hin?
+
+Es gibt mehrere Wege, die die nächsten Lektionen zeigen:
+
+1. `ssh-copy-id` (am einfachsten, braucht einmal Passwort-Login)
+2. Über die Web-Konsole deines Hosters
+3. Beim Bestellen des Servers im Kundenmenü des Hosters
+4. Mit der SSH-Academy: Key auswählen, Server auswählen, fertig

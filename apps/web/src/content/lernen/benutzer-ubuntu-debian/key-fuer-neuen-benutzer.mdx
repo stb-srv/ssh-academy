@@ -1,0 +1,58 @@
+Der neue Benutzer `anna` braucht jetzt deinen Public Key, damit du dich direkt als anna anmelden kannst. Du bist
+gerade noch als root (oder mit einem anderen sudo-Benutzer) angemeldet.
+
+## Variante 1: Key von root übernehmen
+
+Hat root bereits deinen Key (z. B. vom Hoster hinterlegt), kopierst du ihn:
+
+```bash
+sudo mkdir -p /home/anna/.ssh
+sudo cp /root/.ssh/authorized_keys /home/anna/.ssh/authorized_keys
+sudo chown -R anna:anna /home/anna/.ssh
+sudo chmod 700 /home/anna/.ssh
+sudo chmod 600 /home/anna/.ssh/authorized_keys
+```
+
+<Hinweis typ="warnung">
+Prüfe vorher mit `sudo cat /root/.ssh/authorized_keys`, welche Keys darin stehen. Sonst bekommen alle, die root
+nutzen durften, auch Zugang als anna.
+</Hinweis>
+
+## Variante 2: Key direkt eintragen
+
+```bash
+sudo mkdir -p /home/anna/.ssh
+echo "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAA... anna@laptop" | sudo tee -a /home/anna/.ssh/authorized_keys
+sudo chown -R anna:anna /home/anna/.ssh
+sudo chmod 700 /home/anna/.ssh
+sudo chmod 600 /home/anna/.ssh/authorized_keys
+```
+
+`sudo tee -a` ist nötig, weil eine einfache Umleitung mit `>>` nicht mit sudo-Rechten läuft.
+
+## Variante 3: Von deinem Rechner aus
+
+Hat anna ein Passwort und ist der Passwort-Login noch erlaubt:
+
+```bash
+ssh-copy-id anna@203.0.113.10
+```
+
+## Warum chown so wichtig ist
+
+Legst du die Dateien als root an, gehören sie root. sshd lehnt dann den Key ab, weil `.ssh` nicht anna gehört. Der
+häufigste Fehler in dieser Lektion ist ein vergessenes `chown`.
+
+```bash
+sudo ls -la /home/anna/.ssh
+```
+
+```text
+drwx------ 2 anna anna 4096 Okt  3 12:00 .
+-rw------- 1 anna anna  101 Okt  3 12:00 authorized_keys
+```
+
+<Hinweis typ="tipp">
+Der Benutzer-Assistent der SSH-Academy erledigt alle Schritte dieser und der vorigen Lektionen (Benutzer anlegen,
+sudo, Key, Rechte) und zeigt dir jeden ausgeführten Befehl an.
+</Hinweis>

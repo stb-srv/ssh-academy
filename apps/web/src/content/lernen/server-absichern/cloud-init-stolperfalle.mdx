@@ -1,0 +1,57 @@
+Ein Klassiker: Du setzt `PasswordAuthentication no`, lädst sshd neu, und trotzdem fragt der Server weiter nach
+Passwörtern. Schuld ist meistens **cloud-init**.
+
+## Was passiert
+
+Viele VPS- und Cloud-Anbieter richten Server beim ersten Start mit cloud-init ein. Dabei entsteht oft diese Datei:
+
+```bash
+cat /etc/ssh/sshd_config.d/50-cloud-init.conf
+```
+
+```text
+PasswordAuthentication yes
+```
+
+Legst du jetzt deine eigene Datei als `99-sicher.conf` an, wird sie **nach** `50-cloud-init.conf` gelesen. Und weil
+bei sshd der erste Wert gewinnt, bleibt der Passwort-Login an.
+
+## Prüfen
+
+```bash
+sudo sshd -T | grep -i passwordauthentication
+grep -ri passwordauthentication /etc/ssh/sshd_config /etc/ssh/sshd_config.d/
+```
+
+## Lösung
+
+Am saubersten: deine Datei so benennen, dass sie **zuerst** gelesen wird.
+
+```bash
+sudo mv /etc/ssh/sshd_config.d/99-sicher.conf /etc/ssh/sshd_config.d/01-sicher.conf
+```
+
+Zusätzlich kannst du den Wert in der cloud-init-Datei korrigieren:
+
+```bash
+sudo sed -i 's/^PasswordAuthentication yes/PasswordAuthentication no/' /etc/ssh/sshd_config.d/50-cloud-init.conf
+```
+
+Damit cloud-init die Datei nicht bei einer späteren Neu-Initialisierung wiederherstellt, kannst du außerdem in
+`/etc/cloud/cloud.cfg.d/99-ssh.cfg` festlegen:
+
+```text
+ssh_pwauth: false
+```
+
+Danach prüfen und neu laden:
+
+```bash
+sudo sshd -t && sudo systemctl reload ssh
+sudo sshd -T | grep -i passwordauthentication
+```
+
+<Hinweis typ="info">
+Dasselbe Prinzip gilt für alle Einstellungen. Wenn etwas „nicht greift“, ist fast immer eine früher gelesene Datei
+schuld. `sshd -T` zeigt dir die Wahrheit.
+</Hinweis>

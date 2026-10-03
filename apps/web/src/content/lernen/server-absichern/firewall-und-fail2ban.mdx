@@ -1,0 +1,72 @@
+Key-Login ist der wichtigste Schutz. Eine Firewall und Fail2ban sind zusätzliche Schichten.
+
+## Firewall mit ufw
+
+**ufw** ist bei Ubuntu vorinstalliert, bei Debian installierst du es mit `sudo apt install ufw`.
+
+<Hinweis typ="gefahr">
+Erlaube SSH **bevor** du die Firewall einschaltest. Sonst trennt `ufw enable` deine Verbindung.
+</Hinweis>
+
+```bash
+sudo ufw default deny incoming
+sudo ufw default allow outgoing
+sudo ufw allow OpenSSH          # oder: sudo ufw allow 2222/tcp bei geändertem Port
+sudo ufw allow 80,443/tcp       # falls ein Webserver läuft
+sudo ufw enable
+sudo ufw status verbose
+```
+
+### Nützlich: Rate-Limit für SSH
+
+```bash
+sudo ufw limit OpenSSH
+```
+
+Blockiert eine IP, die mehr als 6 Verbindungen in 30 Sekunden aufbaut.
+
+### Nur von bestimmten Adressen
+
+Hast du eine feste IP (z. B. Büro oder VPN):
+
+```bash
+sudo ufw allow from 198.51.100.7 to any port 22 proto tcp
+sudo ufw delete allow OpenSSH
+```
+
+<Hinweis typ="warnung" titel="Docker und ufw">
+Docker trägt eigene Regeln direkt in iptables ein und umgeht dabei ufw. Mit Docker veröffentlichte Ports sind
+trotz ufw erreichbar. Binde Container-Ports wenn möglich an `127.0.0.1`.
+</Hinweis>
+
+## Fail2ban
+
+Fail2ban liest die Logs und sperrt IPs, die zu oft falsch anmelden, für eine Weile aus.
+
+```bash
+sudo apt install fail2ban
+```
+
+Eigene Einstellungen gehören nach `/etc/fail2ban/jail.local`:
+
+```text
+[sshd]
+enabled  = true
+backend  = systemd
+maxretry = 5
+findtime = 10m
+bantime  = 1h
+```
+
+```bash
+sudo systemctl restart fail2ban
+sudo fail2ban-client status sshd
+```
+
+`backend = systemd` ist auf aktuellen Debian- und Ubuntu-Systemen wichtig, weil SSH-Logs dort im Journal statt in
+`/var/log/auth.log` landen können.
+
+<Hinweis typ="info">
+Mit abgeschaltetem Passwort-Login ist Fail2ban vor allem Kosmetik gegen volle Logs. Es schadet aber nicht und
+schützt auch andere Dienste.
+</Hinweis>
