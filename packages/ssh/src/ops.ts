@@ -178,6 +178,11 @@ echo "Passwort gesetzt."`,
 
 export const SSHD_DROPIN = "/etc/ssh/sshd_config.d/10-ssh-academy.conf";
 
+const RELOAD_SSHD = `if ! { systemctl reload ssh || systemctl reload sshd || service ssh reload; } >/dev/null 2>&1; then
+  echo "Die Konfiguration ist gültig, aber sshd ließ sich nicht neu laden. Bitte 'sudo systemctl reload ssh' ausführen." >&2
+  exit 6
+fi`;
+
 export function applySshdConfig(opts: { config: string }): RemoteOp {
   return {
     title: "sshd-Konfiguration anwenden",
@@ -198,7 +203,7 @@ if ! sshd -t; then
   if [ -f "$F.bak" ]; then mv "$F.bak" "$F"; else rm -f "$F"; fi
   exit 5
 fi
-systemctl reload ssh 2>/dev/null || systemctl reload sshd 2>/dev/null || kill -HUP "$(cat /run/sshd.pid)"
+${RELOAD_SSHD}
 echo "Konfiguration geprüft und sshd neu geladen."`,
   };
 }
@@ -218,7 +223,7 @@ SSH_ACADEMY_EOF
 chmod 644 ${CA_FILE}
 printf 'TrustedUserCAKeys %s\\n' ${CA_FILE} > ${CA_DROPIN}
 sshd -t
-systemctl reload ssh 2>/dev/null || systemctl reload sshd 2>/dev/null || kill -HUP "$(cat /run/sshd.pid)"
+${RELOAD_SSHD}
 echo "Der Server akzeptiert jetzt Zertifikate dieser Zertifizierungsstelle."`,
   };
 }

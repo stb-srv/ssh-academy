@@ -39,6 +39,16 @@ const schema = z.object({
   POCKET_ID_AUTO_LINK_BY_EMAIL: bool.default(false),
   /** Höchstdauer einer Sitzung aus einem Pocket-ID-Login, gerechnet ab dem Login */
   POCKET_ID_MAX_SESSION_HOURS: z.coerce.number().int().min(1).max(720).default(12),
+  /** API-Key aus Pocket ID (Admin > API-Keys) für den regelmäßigen Abgleich gesperrter Nutzer */
+  POCKET_ID_API_KEY: z.string().optional(),
+  /** Abstand des Abgleichs mit Pocket ID in Minuten */
+  POCKET_ID_SYNC_MINUTES: z.coerce.number().int().min(5).max(1440).default(60),
+
+  /** SSH-Gateway: interne Adresse (nur im Docker-Netz erreichbar) und gemeinsames Geheimnis */
+  GATEWAY_INTERNAL_URL: z.url().default("http://gateway:4000"),
+  GATEWAY_INTERNAL_TOKEN: z.string().min(32, "GATEWAY_INTERNAL_TOKEN muss mindestens 32 Zeichen lang sein").optional(),
+  /** Öffentliche WebSocket-Adresse des Gateways (Standard: APP_URL + /gateway/ws) */
+  GATEWAY_PUBLIC_URL: z.string().optional(),
 });
 
 export type Env = z.infer<typeof schema>;
@@ -66,3 +76,14 @@ export const pocketIdEnabled = Boolean(
 );
 
 export const POCKET_ID_PROVIDER = "pocket-id";
+
+/** SSH-Funktionen (Server, Terminal, Tresor) brauchen das Gateway */
+export const gatewayEnabled = Boolean(env.GATEWAY_INTERNAL_TOKEN);
+
+export function gatewayWebSocketUrl() {
+  if (env.GATEWAY_PUBLIC_URL) return env.GATEWAY_PUBLIC_URL;
+  const url = new URL(env.APP_URL);
+  url.protocol = url.protocol === "https:" ? "wss:" : "ws:";
+  url.pathname = "/gateway/ws";
+  return url.toString();
+}

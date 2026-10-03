@@ -15,6 +15,8 @@ export function proxy(request: NextRequest) {
   }
 
   const nonce = Buffer.from(crypto.randomUUID()).toString("base64");
+  // Web-Terminal: WebSocket zum Gateway (gleiche Adresse oder eigene GATEWAY_PUBLIC_URL)
+  const connectSrc = ["'self'", gatewayOrigin()].filter(Boolean).join(" ");
   const isDev = process.env.NODE_ENV === "development";
   const csp = [
     "default-src 'self'",
@@ -22,7 +24,7 @@ export function proxy(request: NextRequest) {
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' blob: data:",
     "font-src 'self'",
-    "connect-src 'self'",
+    `connect-src ${connectSrc}`,
     "object-src 'none'",
     "base-uri 'self'",
     "form-action 'self'",
@@ -37,6 +39,15 @@ export function proxy(request: NextRequest) {
   const response = NextResponse.next({ request: { headers: requestHeaders } });
   response.headers.set("Content-Security-Policy", csp);
   return response;
+}
+
+function gatewayOrigin() {
+  const explicit = process.env.GATEWAY_PUBLIC_URL;
+  if (explicit) return new URL(explicit).origin.replace(/^http/, "ws");
+  const app = process.env.APP_URL;
+  if (!app) return null;
+  const url = new URL(app);
+  return `${url.protocol === "https:" ? "wss:" : "ws:"}//${url.host}`;
 }
 
 export const config = {
