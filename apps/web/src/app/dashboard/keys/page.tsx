@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { ButtonLink } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { listAccessibleKeys } from "@/lib/access";
-import { formatDate, KEY_MODE_LABELS } from "@/lib/format";
+import { formatDate, KEY_MODE_LABELS, nowMs } from "@/lib/format";
 import { requireSession } from "@/lib/session";
 
 export const metadata: Metadata = { title: "SSH-Keys" };
@@ -13,7 +13,7 @@ export const metadata: Metadata = { title: "SSH-Keys" };
 export default async function KeysPage() {
   const session = await requireSession();
   const keys = await listAccessibleKeys(session.user.id);
-  const soon = Date.now() + 14 * 86400_000;
+  const soon = nowMs() + 14 * 86400_000;
 
   return (
     <div className="space-y-6">
@@ -38,7 +38,7 @@ export default async function KeysPage() {
       ) : (
         <ul className="space-y-3">
           {keys.map(({ key, teamName }) => {
-            const expired = key.expiresAt && key.expiresAt.getTime() < Date.now();
+            const expired = key.expiresAt && key.expiresAt.getTime() < nowMs();
             const expiring = !expired && key.expiresAt && key.expiresAt.getTime() < soon;
             return (
               <li key={key.id}>

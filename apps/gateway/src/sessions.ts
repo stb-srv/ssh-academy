@@ -9,7 +9,7 @@ import { createHash } from "node:crypto";
 import { gzipSync } from "node:zlib";
 import type { Client, ClientChannel, SFTPWrapper } from "ssh2";
 import { WebSocketServer, type RawData, type WebSocket } from "ws";
-import { and, eq, gt, schema, sql } from "@ssh-academy/db";
+import { and, eq, gt, inArray, schema, sql } from "@ssh-academy/db";
 import {
   SFTP_MAX_TRANSFER_BYTES,
   type ClientControl,
@@ -25,6 +25,29 @@ import { connect, GatewayError } from "./ssh";
 const wss = new WebSocketServer({ noServer: true, maxPayload: 1024 * 1024 });
 const activeByUser = new Map<string, number>();
 let activeTotal = 0;
+/** Laufende Verbindungen: sessionId -> Nutzer und Abbruch-Funktion */
+const live = new Map<string, { userId: string | null; kill: (reason: string) => void }>();
+
+/**
+ * Prüft regelmäßig, ob laufende Verbindungen beendet werden müssen: Nutzer gesperrt (z. B. durch den
+ * Pocket-ID-Abgleich) oder die Sitzung wurde in der Web-App beendet (Status nicht mehr "active").
+ */
+async function sweepLiveSessions() {
+  if (!live.size) return;
+  const ids = [...live.keys()];
+  const rows = await db
+    .select({ id: schema.connectionSession.id, status: schema.connectionSession.status, banned: schema.user.banned })
+    .from(schema.connectionSession)
+    .leftJoin(schema.user, eq(schema.user.id, schema.connectionSession.userId))
+    .where(inArray(schema.connectionSession.id, ids));
+  for (const r of rows) {
+    const entry = live.get(r.id);
+    if (!entry) continue;
+    if (r.banned) entry.kill("Nutzer wurde gesperrt");
+    else if (r.status !== "active") entry.kill("In der Web-App beendet");
+  }
+}
+setInterval(() => void sweepLiveSessions().catch((err) => console.error("[ws] Prüfung fehlgeschlagen", err)), 30_000).unref();
 
 export function activeSessionCount() {
   return activeTotal;
@@ -129,6 +152,7 @@ async function startSession(ws: WebSocket, token: string, opts: { cols: number; 
   const cleanup = async (reason: string, status: "closed" | "failed" = "closed") => {
     if (closed) return;
     closed = true;
+    live.delete(session.id);
     timers.forEach(clearTimeout);
     client?.end();
     activeByUser.set(userId, Math.max(0, (activeByUser.get(userId) ?? 1) - 1));
@@ -147,6 +171,13 @@ async function startSession(ws: WebSocket, token: string, opts: { cols: number; 
     if (ws.readyState === ws.OPEN) ws.close(1000);
   };
   ws.once("close", () => void cleanup("Browser hat die Verbindung geschlossen"));
+  live.set(session.id, {
+    userId: session.userId,
+    kill: (reason) => {
+      sendControl(ws, { type: "exit", code: null, reason: `Verbindung beendet: ${reason}.` });
+      void cleanup(reason);
+    },
+  });
 
   try {
     const [server] = session.serverId ? await db.select().from(schema.server).where(eq(schema.server.id, session.serverId)) : [];

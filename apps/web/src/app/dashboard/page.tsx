@@ -7,7 +7,7 @@ import { ButtonLink } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { listAccessibleKeys, listAccessibleServers } from "@/lib/access";
 import { loadAudit, personalAudit } from "@/lib/audit-query";
-import { formatDate } from "@/lib/format";
+import { formatDate, nowMs } from "@/lib/format";
 import { getProgress } from "@/lib/progress";
 import { getSecurityOverview } from "@/lib/security";
 import { requireSession } from "@/lib/session";
@@ -23,7 +23,7 @@ export default async function DashboardPage() {
     loadAudit(personalAudit(session.user.id), 6),
     getProgress(session.user.id),
   ]);
-  const soon = Date.now() + 14 * 86400_000;
+  const soon = nowMs() + 14 * 86400_000;
   const expiring = keys.filter(({ key }) => !key.revokedAt && key.expiresAt && key.expiresAt.getTime() < soon);
   const problems = servers.filter(({ server }) => server.status === "host_key_mismatch" || server.status === "offline" || !server.hostKeyConfirmedAt);
 

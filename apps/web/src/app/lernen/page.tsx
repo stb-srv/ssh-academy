@@ -29,6 +29,9 @@ export default async function LearnPage() {
               {progress && progress.lessonsDone > 0 ? "Weiterlernen" : "Mit Lektion 1 starten"}
             </ButtonLink>
           )}
+          <ButtonLink href="/lernen/uebung" variant="secondary">
+            Übungsterminal
+          </ButtonLink>
           <ButtonLink href="/werkzeuge" variant="secondary">
             Werkzeuge
           </ButtonLink>

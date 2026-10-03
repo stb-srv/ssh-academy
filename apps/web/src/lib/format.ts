@@ -11,3 +11,4 @@ export function formatBytes(n: number) {
 }
 
 export const KEY_MODE_LABELS = { download: "Nur heruntergeladen", vault: "Im Tresor", imported: "Importiert" } as const;
+export const nowMs = () => Date.now();
