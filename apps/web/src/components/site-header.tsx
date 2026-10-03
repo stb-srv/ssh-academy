@@ -19,6 +19,9 @@ export async function SiteHeader() {
           <Link href="/lernen" className="rounded-md px-2 py-1 hover:bg-border/40">
             Lernen
           </Link>
+          <Link href="/werkzeuge" className="rounded-md px-2 py-1 hover:bg-border/40">
+            Werkzeuge
+          </Link>
           {session ? (
             <>
               <Link href="/dashboard" className="rounded-md px-2 py-1 hover:bg-border/40">

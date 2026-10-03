@@ -34,6 +34,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm typecheck
       - run: pnpm lint
+      - run: pnpm test
       - name: Migrationen gegen leere Datenbank
         run: pnpm db:migrate
       - name: Schema und Migrationen stimmen überein
