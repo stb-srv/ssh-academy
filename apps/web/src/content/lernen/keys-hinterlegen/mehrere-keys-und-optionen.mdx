@@ -1,0 +1,53 @@
+In `authorized_keys` darf es beliebig viele Keys geben. Und vor jedem Key kannst du **Optionen** setzen, die
+einschränken, was mit diesem Key erlaubt ist.
+
+## Ein Key pro Gerät
+
+Nutze nicht denselben Private Key auf Laptop, Desktop und Handy. Erzeuge pro Gerät einen eigenen. Dann:
+
+- siehst du am Kommentar, welches Gerät sich anmeldet,
+- kannst du bei Verlust genau **einen** Key entfernen, die anderen funktionieren weiter.
+
+```text
+ssh-ed25519 AAAA...aaa anna@laptop
+ssh-ed25519 AAAA...bbb anna@desktop
+sk-ssh-ed25519@openssh.com AAAA...ccc anna@yubikey
+```
+
+## Optionen vor dem Key
+
+Optionen stehen **vor** dem Key-Typ, durch Kommas getrennt, ohne Leerzeichen dazwischen:
+
+```text
+from="203.0.113.0/24",no-port-forwarding,no-agent-forwarding ssh-ed25519 AAAA... backup@nas
+```
+
+| Option | Wirkung |
+|---|---|
+| `from="203.0.113.5,198.51.100.0/24"` | Key funktioniert nur von diesen Adressen |
+| `command="/usr/local/bin/backup.sh"` | Egal was der Client will, es läuft nur dieser Befehl |
+| `restrict` | Schaltet alles Zusätzliche ab (Weiterleitungen, Terminal, X11, Agent) |
+| `no-port-forwarding` | Keine Tunnel über diesen Key |
+| `no-agent-forwarding` | Kein Agent-Forwarding |
+| `no-pty` | Kein interaktives Terminal |
+| `expiry-time="20271231"` | Key gilt nur bis zu diesem Datum (OpenSSH 8.2+) |
+
+## Beispiel: Ein Key nur für Backups
+
+Ein Backup-Server soll jede Nacht Daten abholen, aber sonst nichts dürfen:
+
+```text
+restrict,from="192.0.2.50",command="rrsync -ro /var/backups" ssh-ed25519 AAAA... backup@nas
+```
+
+- `restrict` schaltet alle Extras ab,
+- `from=` erlaubt nur den Backup-Server,
+- `command=` erlaubt nur lesenden rsync-Zugriff auf `/var/backups` (`rrsync` liegt je nach System unter
+  `/usr/bin/rrsync` oder bei den rsync-Beispielen).
+
+Wird dieser Key gestohlen, kann der Dieb damit fast nichts anfangen.
+
+<Hinweis typ="tipp">
+Ein zeitlich befristeter Zugang für einen Dienstleister: `expiry-time="20261031"` vor den Key schreiben. Nach dem
+Datum lehnt der Server den Key automatisch ab.
+</Hinweis>

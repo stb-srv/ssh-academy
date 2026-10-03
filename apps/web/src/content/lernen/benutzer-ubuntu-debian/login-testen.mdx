@@ -1,0 +1,52 @@
+Bevor du irgendetwas abschaltest (root-Login, Passwort-Login), musst du sicher sein, dass der neue Zugang
+funktioniert. Diese Checkliste verhindert, dass du dich aussperrst.
+
+## Die goldene Regel
+
+**Lass die bestehende root-Sitzung offen.** Öffne für den Test ein **zweites** Terminal-Fenster.
+
+## Checkliste
+
+1. Im zweiten Fenster als anna anmelden:
+
+```bash
+ssh anna@203.0.113.10
+```
+
+2. Kam **keine** Frage nach dem Server-Passwort (`anna@…'s password:`)? Dann wurde der Key benutzt.
+3. sudo testen:
+
+```bash
+sudo whoami
+```
+
+Ergebnis muss `root` sein.
+
+4. Prüfen, mit welchem Verfahren du angemeldet bist (auf dem Server, im root-Fenster):
+
+```bash
+sudo journalctl -u ssh -n 5 | grep Accepted
+```
+
+Dort muss `Accepted publickey for anna` stehen, nicht `Accepted password`.
+
+## Wenn es nicht klappt
+
+| Symptom | Häufige Ursache |
+|---|---|
+| Fragt nach Passwort | Key nicht in `/home/anna/.ssh/authorized_keys`, falsche Rechte oder falscher Besitzer |
+| `Permission denied (publickey)` | Wie oben, oder dein Rechner bietet den falschen Key an |
+| `anna is not in the sudoers file` | `usermod -aG sudo anna` vergessen oder nicht neu angemeldet |
+| `sudo: command not found` | Debian ohne sudo: `apt install sudo` |
+
+Ausführliche Fehlersuche vom Client aus:
+
+```bash
+ssh -v anna@203.0.113.10
+```
+
+Achte auf Zeilen wie `Offering public key` und `Authentications that can continue`.
+
+<Hinweis typ="tipp">
+Erst wenn alle Punkte grün sind, geht es mit Modul 6 und 7 weiter: root-Login und Passwort-Login abschalten.
+</Hinweis>

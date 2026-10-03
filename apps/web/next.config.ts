@@ -1,4 +1,5 @@
 import path from "node:path";
+import createMDX from "@next/mdx";
 import type { NextConfig } from "next";
 
 // HSTS setzt der Reverse Proxy (Caddy), weil nur er weiß, ob HTTPS aktiv ist.
@@ -21,4 +22,11 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+const withMDX = createMDX({
+  options: {
+    // Als String angegeben, damit es auch mit Turbopack funktioniert
+    remarkPlugins: ["remark-gfm"],
+  },
+});
+
+export default withMDX(nextConfig);

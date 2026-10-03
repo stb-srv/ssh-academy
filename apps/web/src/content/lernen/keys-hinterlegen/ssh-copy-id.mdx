@@ -1,0 +1,58 @@
+Wenn du dich (noch) mit Passwort auf dem Server anmelden kannst, ist das der einfachste Weg.
+
+<OsTabs>
+<Os name="unix">
+
+```bash
+ssh-copy-id -i ~/.ssh/id_ed25519.pub anna@203.0.113.10
+```
+
+Du wirst einmal nach dem **Passwort** von `anna` auf dem Server gefragt. `ssh-copy-id` erledigt dann alles:
+
+- legt `~/.ssh` mit den richtigen Rechten an, falls nötig,
+- hängt den Key an `authorized_keys` an (ohne Duplikate),
+- setzt die Rechte.
+
+Läuft SSH auf einem anderen Port:
+
+```bash
+ssh-copy-id -i ~/.ssh/id_ed25519.pub -p 2222 anna@203.0.113.10
+```
+
+</Os>
+<Os name="windows">
+
+Windows hat kein `ssh-copy-id`. Dieser PowerShell-Einzeiler macht dasselbe:
+
+```powershell
+Get-Content $env:USERPROFILE\.ssh\id_ed25519.pub | ssh anna@203.0.113.10 "umask 077; mkdir -p ~/.ssh && cat >> ~/.ssh/authorized_keys"
+```
+
+Er liest deinen Public Key, verbindet sich mit Passwort und hängt den Key an die Datei an. `umask 077` sorgt für
+die richtigen Rechte bei neu angelegten Dateien.
+
+</Os>
+</OsTabs>
+
+## Testen
+
+```bash
+ssh -i ~/.ssh/id_ed25519 anna@203.0.113.10
+```
+
+Fragt SSH jetzt nach der **Passphrase deines Keys** (oder gar nichts, wenn der Agent läuft) statt nach dem
+Passwort des Servers, hat es geklappt.
+
+<Hinweis typ="warnung">
+Erkennt man den Unterschied? Passphrase-Frage: `Enter passphrase for key '/home/anna/.ssh/id_ed25519':`.
+Passwort-Frage des Servers: `anna@203.0.113.10's password:`. Kommt Letzteres, wurde der Key nicht akzeptiert.
+</Hinweis>
+
+## Und für root?
+
+Genauso, nur mit `root@`. Ob du dich überhaupt als root anmelden solltest, besprechen wir in Modul 6.
+
+<Hinweis typ="tipp">
+Im <a href="/werkzeuge/befehle">Befehls-Baukasten</a> trägst du Benutzer, Server und Port ein und bekommst alle
+Befehle fertig zum Kopieren.
+</Hinweis>

@@ -1,0 +1,84 @@
+Du hast deinen Key mit einer Passphrase geschützt. Damit du sie nicht bei jeder Verbindung eintippen musst, gibt es
+den **ssh-agent**. Er hält entsperrte Keys im Arbeitsspeicher, solange du angemeldet bist.
+
+## Key zum Agent hinzufügen
+
+<OsTabs>
+<Os name="linux">
+
+Auf den meisten Desktops (GNOME, KDE) läuft bereits ein Agent. Prüfen und Key hinzufügen:
+
+```bash
+ssh-add -l
+ssh-add ~/.ssh/id_ed25519
+```
+
+Läuft kein Agent (`Could not open a connection to your authentication agent`), startest du ihn in der aktuellen
+Shell:
+
+```bash
+eval "$(ssh-agent -s)"
+ssh-add ~/.ssh/id_ed25519
+```
+
+</Os>
+<Os name="macos">
+
+macOS hat einen eingebauten Agent und kann die Passphrase im **Schlüsselbund** speichern:
+
+```bash
+ssh-add --apple-use-keychain ~/.ssh/id_ed25519
+```
+
+Damit das nach jedem Neustart automatisch passiert, ergänze in `~/.ssh/config`:
+
+```text
+Host *
+  UseKeychain yes
+  AddKeysToAgent yes
+  IdentityFile ~/.ssh/id_ed25519
+```
+
+</Os>
+<Os name="windows">
+
+Der Dienst muss einmalig aktiviert werden (PowerShell als Administrator):
+
+```powershell
+Get-Service ssh-agent | Set-Service -StartupType Automatic
+Start-Service ssh-agent
+```
+
+Dann in einer normalen PowerShell:
+
+```powershell
+ssh-add $env:USERPROFILE\.ssh\id_ed25519
+```
+
+Windows merkt sich den Key auch über Neustarts hinweg.
+
+</Os>
+</OsTabs>
+
+## Nützliche Befehle
+
+| Befehl | Wirkung |
+|---|---|
+| `ssh-add -l` | Zeigt geladene Keys (Fingerprints) |
+| `ssh-add -D` | Entfernt alle Keys aus dem Agent |
+| `ssh-add -t 1h ~/.ssh/id_ed25519` | Key nur eine Stunde lang behalten |
+| `ssh-add -c ~/.ssh/id_ed25519` | Vor jeder Nutzung nachfragen (braucht grafische Abfrage) |
+
+## AddKeysToAgent: automatisch beim ersten Gebrauch
+
+Mit dieser Zeile in `~/.ssh/config` wird der Key beim ersten Verbinden automatisch in den Agent geladen:
+
+```text
+Host *
+  AddKeysToAgent yes
+```
+
+<Hinweis typ="warnung">
+Wer auf deinem Rechner als du (oder als root) Befehle ausführen kann, kann den Agent ebenfalls benutzen. Sperre
+deinen Bildschirm, wenn du weggehst, und nutze bei Bedarf `ssh-add -t`.
+</Hinweis>

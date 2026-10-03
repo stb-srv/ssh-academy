@@ -1,0 +1,75 @@
+Mit wachsender Zahl an Servern und Menschen wird `authorized_keys` mühsam: Jeder Key muss auf jeden Server, jedes
+Offboarding bedeutet Aufräumen überall. **SSH-Zertifikate** lösen das.
+
+## Die Idee
+
+Statt jedem Server jeden Key beizubringen, vertrauen alle Server **einer Zertifizierungsstelle** (CA). Die CA
+unterschreibt deinen Public Key und erzeugt daraus ein Zertifikat mit:
+
+- für welche Benutzernamen es gilt (Principals),
+- wie lange es gilt (z. B. 8 Stunden),
+- welche Extras erlaubt sind (Port-Forwarding usw.).
+
+Der Server prüft nur noch: „Ist das Zertifikat von meiner CA unterschrieben und noch gültig?“
+
+| | authorized_keys | Zertifikate |
+|---|---|---|
+| Neuer Mitarbeiter | Key auf alle Server | Zertifikat ausstellen, fertig |
+| Mitarbeiter geht | Key überall löschen | Kein neues Zertifikat mehr, altes läuft ab |
+| Gültigkeit | Unbegrenzt | Frei wählbar, z. B. 1 Tag |
+| Host-Key-Warnung beim ersten Verbinden | Ja | Nein (mit Host-Zertifikaten) |
+
+## Ausprobieren
+
+**1. CA erzeugen** (auf einem gut geschützten Rechner):
+
+```bash
+ssh-keygen -t ed25519 -f ssh_user_ca -C "Benutzer-CA"
+```
+
+**2. Server vertraut der CA:** `ssh_user_ca.pub` nach `/etc/ssh/` kopieren und eintragen:
+
+```text
+TrustedUserCAKeys /etc/ssh/ssh_user_ca.pub
+```
+
+```bash
+sudo sshd -t && sudo systemctl reload ssh
+```
+
+**3. Zertifikat für anna ausstellen,** gültig 8 Stunden, nur für den Benutzer `anna`:
+
+```bash
+ssh-keygen -s ssh_user_ca -I "anna@firma" -n anna -V +8h ~/.ssh/id_ed25519.pub
+```
+
+Es entsteht `~/.ssh/id_ed25519-cert.pub`. SSH benutzt es automatisch, wenn es neben dem Key liegt.
+
+**4. Ansehen:**
+
+```bash
+ssh-keygen -Lf ~/.ssh/id_ed25519-cert.pub
+```
+
+```text
+        Type: ssh-ed25519-cert-v01@openssh.com user certificate
+        Key ID: "anna@firma"
+        Valid: from 2026-10-03T10:00:00 to 2026-10-03T18:00:00
+        Principals:
+                anna
+```
+
+## Host-Zertifikate
+
+Umgekehrt kann eine Host-CA die Host-Keys der Server unterschreiben. Trägt man auf dem Client in `known_hosts`
+`@cert-authority *.example.de ssh-ed25519 AAAA…` ein, entfällt die Fingerprint-Frage für alle Server dieser Domain.
+
+<Hinweis typ="gefahr">
+Der Private Key der CA ist das wertvollste Geheimnis überhaupt: Wer ihn hat, kann sich überall anmelden. Er gehört
+auf einen besonders geschützten Rechner, in ein HSM oder in einen Dienst wie die SSH-Academy (Phase 4).
+</Hinweis>
+
+<Hinweis typ="tipp">
+Die SSH-Academy kann als CA arbeiten: Du richtest `TrustedUserCAKeys` einmal ein, danach stellt die Plattform
+kurzlebige Zertifikate für berechtigte Team-Mitglieder aus.
+</Hinweis>

@@ -1,0 +1,66 @@
+Jetzt kommt der Moment, auf den der Kurs hinarbeitet: Passwort-Login aus. Danach haben Brute-Force-Angriffe keine
+Chance mehr.
+
+## Vorher abhaken
+
+- [ ] Ein eigener Benutzer mit sudo existiert (Modul 5).
+- [ ] Der Login mit Key als dieser Benutzer funktioniert (Lektion „Login testen“).
+- [ ] `sudo whoami` ergibt `root`.
+- [ ] Eine Sitzung bleibt während der Änderung offen.
+
+## Die Drop-in-Datei
+
+```bash
+sudo nano /etc/ssh/sshd_config.d/01-sicher.conf
+```
+
+Inhalt:
+
+```text
+# Nur Anmeldung mit SSH-Key
+PubkeyAuthentication yes
+PasswordAuthentication no
+KbdInteractiveAuthentication no
+PermitEmptyPasswords no
+
+# root darf sich nicht per SSH anmelden
+PermitRootLogin no
+
+# Optional: nur diese Benutzer (oder Gruppen) dürfen per SSH rein
+# AllowUsers anna deploy
+# AllowGroups ssh-users
+```
+
+| Zeile | Wirkung |
+|---|---|
+| `PasswordAuthentication no` | Keine Passwörter mehr |
+| `KbdInteractiveAuthentication no` | Schließt den zweiten Passwort-Weg (früher `ChallengeResponseAuthentication`) |
+| `PermitRootLogin no` | root kommt nicht mehr per SSH rein |
+| `AllowUsers` / `AllowGroups` | Alle anderen Benutzer werden abgewiesen |
+
+<Hinweis typ="warnung" titel="AllowUsers mit Bedacht">
+Mit `AllowUsers` darf sich **nur** anmelden, wer genannt ist. Vergisst du dich selbst, sperrst du dich aus. Eine
+Gruppe (`AllowGroups ssh-users`) ist leichter zu pflegen: `sudo addgroup ssh-users && sudo usermod -aG ssh-users anna`.
+</Hinweis>
+
+## Anwenden
+
+Wie das sicher geht, zeigt die nächste Lektion. Kurz:
+
+```bash
+sudo sshd -t && sudo systemctl reload ssh
+```
+
+## Ergebnis prüfen
+
+Von deinem Rechner aus, in einem **neuen** Fenster:
+
+```bash
+ssh -o PubkeyAuthentication=no anna@203.0.113.10
+```
+
+```text
+anna@203.0.113.10: Permission denied (publickey).
+```
+
+Das `(publickey)` am Ende bedeutet: Der Server bietet nur noch Key-Login an. Geschafft!

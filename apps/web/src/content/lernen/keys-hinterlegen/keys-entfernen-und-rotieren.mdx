@@ -1,0 +1,49 @@
+Normale SSH-Keys laufen **nie** von allein ab. Wer einmal in `authorized_keys` steht, kommt rein, bis jemand die
+Zeile löscht. Darum gehört das Entfernen und Erneuern von Keys zur Routine.
+
+## Wann ein Key weg muss
+
+- Ein Gerät wurde verloren, gestohlen oder verkauft.
+- Jemand verlässt das Team oder das Projekt.
+- Ein Private Key wurde versehentlich geteilt (Chat, Repository, Screenshot).
+- Der Key ist sehr alt oder nutzt einen schwachen Typ (DSA, RSA unter 2048 Bit).
+
+## Einen Key entfernen
+
+Auf dem Server die passende Zeile löschen. Der Kommentar hilft beim Finden:
+
+```bash
+grep -n "anna@altes-laptop" ~/.ssh/authorized_keys
+sed -i '/anna@altes-laptop/d' ~/.ssh/authorized_keys
+```
+
+Prüfe danach die Datei mit `cat`. Kommentare kann man ändern, sicherer ist der Vergleich über den Fingerprint:
+
+```bash
+ssh-keygen -lf ~/.ssh/authorized_keys
+```
+
+Diese Ausgabe zeigt den Fingerprint jeder Zeile. Vergleiche ihn mit dem des Keys, den du entfernen willst.
+
+## Einen Key rotieren (erneuern)
+
+Rotieren heißt: neuen Key einführen, alten entfernen, ohne Ausfall.
+
+1. Neuen Key erzeugen: `ssh-keygen -t ed25519 -C "anna@laptop-2026"`
+2. Neuen Key auf **alle** Server bringen (der alte funktioniert noch).
+3. Auf jedem Server testen, ob der neue Key funktioniert.
+4. Alten Key überall entfernen.
+5. Alten Private Key löschen.
+
+Bei drei Servern ist das schnell gemacht. Bei dreißig Servern und fünf Kollegen wird es mühsam und fehleranfällig.
+
+<Hinweis typ="tipp" titel="So hilft die SSH-Academy">
+Im Dashboard siehst du, welcher Key auf welchem Server liegt. Der Rotations-Assistent verteilt den neuen Key, testet
+ihn und entfernt den alten überall. Verlässt jemand ein Team, werden seine Keys automatisch von allen Team-Servern
+entfernt.
+</Hinweis>
+
+<Hinweis typ="profi">
+Noch eleganter sind **SSH-Zertifikate** (Modul 8): Zugänge laufen automatisch ab, und auf den Servern muss nichts
+mehr gelöscht werden.
+</Hinweis>

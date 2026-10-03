@@ -1,0 +1,54 @@
+Der SSH-Server heißt `sshd`. Seine Einstellungen liegen in `/etc/ssh/`.
+
+## Die Dateien
+
+| Datei | Zweck |
+|---|---|
+| `/etc/ssh/sshd_config` | Hauptdatei des Servers |
+| `/etc/ssh/sshd_config.d/*.conf` | Ergänzende Dateien (Drop-ins), seit Ubuntu 22.04 und Debian 12 |
+| `/etc/ssh/ssh_config` | Einstellungen für den **Client** (nicht verwechseln!) |
+| `/etc/ssh/ssh_host_*_key` | Host-Keys des Servers |
+
+Ganz oben in `sshd_config` steht bei aktuellen Versionen:
+
+```text
+Include /etc/ssh/sshd_config.d/*.conf
+```
+
+Damit werden alle `.conf`-Dateien im Ordner **vor** dem Rest der Hauptdatei eingelesen.
+
+## Warum Drop-ins?
+
+- Bei Updates von OpenSSH bleibt die Hauptdatei unverändert, deine Änderungen kollidieren nicht.
+- Du siehst auf einen Blick, was **du** geändert hast.
+- Automatisierungswerkzeuge legen einfach eine eigene Datei ab.
+
+## Die wichtigste Regel: Der erste Wert gewinnt
+
+Bei `sshd` gilt für die meisten Einstellungen: **Der zuerst gelesene Wert zählt**, spätere werden ignoriert. Die
+Drop-ins werden alphabetisch sortiert gelesen. Daraus folgt:
+
+- `01-sicher.conf` wird vor `50-cloud-init.conf` gelesen und gewinnt.
+- `99-sicher.conf` wird **nach** `50-cloud-init.conf` gelesen und verliert.
+
+Das ist anders als bei vielen anderen Programmen, wo der letzte Wert gewinnt.
+
+## Die tatsächlich wirksame Konfiguration
+
+Statt Dateien zu lesen, fragst du sshd direkt:
+
+```bash
+sudo sshd -T | grep -Ei 'passwordauthentication|permitrootlogin|pubkeyauthentication|port'
+```
+
+```text
+port 22
+permitrootlogin no
+pubkeyauthentication yes
+passwordauthentication no
+```
+
+<Hinweis typ="tipp">
+Der <a href="/werkzeuge/sshd-config">sshd_config-Generator</a> erstellt dir eine fertige Drop-in-Datei mit
+Erklärung jeder Zeile.
+</Hinweis>

@@ -1,0 +1,68 @@
+## Unsere Empfehlung
+
+1. **Für Menschen:** eigener Benutzer pro Person mit Key und sudo.
+2. **root:** `PermitRootLogin no`.
+3. **Für Automatisierung:** ein eigener Dienst-Benutzer (z. B. `deploy` oder `backup`) mit genau den nötigen
+   sudo-Regeln. Wenn wirklich root nötig ist: `PermitRootLogin forced-commands-only` und der Key in
+   `/root/.ssh/authorized_keys` mit `command="…"` beschränkt.
+
+## Umstellung Schritt für Schritt
+
+<Hinweis typ="gefahr">
+Arbeite die Schritte genau in dieser Reihenfolge ab und lass eine root-Sitzung offen, bis alles getestet ist.
+</Hinweis>
+
+**1. Eigenen Benutzer anlegen** (Modul 5):
+
+```bash
+adduser anna
+usermod -aG sudo anna
+```
+
+**2. Key für den Benutzer einrichten:**
+
+```bash
+mkdir -p /home/anna/.ssh
+cp /root/.ssh/authorized_keys /home/anna/.ssh/
+chown -R anna:anna /home/anna/.ssh
+chmod 700 /home/anna/.ssh && chmod 600 /home/anna/.ssh/authorized_keys
+```
+
+**3. In einem zweiten Fenster testen:** `ssh anna@SERVER`, dann `sudo whoami` → `root`.
+
+**4. Root-Login abschalten:**
+
+```bash
+echo "PermitRootLogin no" | sudo tee /etc/ssh/sshd_config.d/01-kein-root.conf
+sudo sshd -t && sudo systemctl reload ssh
+```
+
+Der Dateiname beginnt mit `01-`, damit er vor anderen Drop-ins gelesen wird (Erklärung in Modul 7).
+
+**5. Erneut testen** in einem **neuen** Fenster:
+
+```bash
+ssh root@SERVER
+```
+
+```text
+root@SERVER: Permission denied (publickey).
+```
+
+Genau das wollen wir. Und `ssh anna@SERVER` funktioniert weiterhin.
+
+**6. Erst jetzt** die alte root-Sitzung schließen.
+
+## Optional: root-Keys aufräumen
+
+Darf sich root nicht mehr anmelden, kannst du `/root/.ssh/authorized_keys` leeren. So kann ein späteres
+versehentliches `PermitRootLogin yes` nichts anrichten.
+
+```bash
+sudo truncate -s 0 /root/.ssh/authorized_keys
+```
+
+<Hinweis typ="tipp">
+Der Benutzer-Assistent der SSH-Academy führt genau diese Schritte durch und prüft vor dem Abschalten automatisch,
+ob der neue Login funktioniert.
+</Hinweis>

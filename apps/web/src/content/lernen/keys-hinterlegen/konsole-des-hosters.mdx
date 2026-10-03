@@ -1,0 +1,40 @@
+Manchmal geht kein Passwort-Login, zum Beispiel weil der Hoster ihn von Anfang an abschaltet. Dann hilft die
+**Web-Konsole** des Hosters. Sie zeigt den Bildschirm des Servers direkt im Browser, ganz ohne SSH.
+
+## So findest du die Konsole
+
+Die Bezeichnung unterscheidet sich je nach Anbieter: „Konsole“, „VNC“, „Console“, „KVM“ oder „Rescue“. Meist ist
+es ein Knopf mit einem Bildschirm-Symbol in der Server-Übersicht.
+
+## Key über die Konsole eintragen
+
+Melde dich in der Konsole als der Benutzer an (oder als root), der den Key bekommen soll. Dann:
+
+```bash
+mkdir -p ~/.ssh
+chmod 700 ~/.ssh
+nano ~/.ssh/authorized_keys
+```
+
+Füge deinen Public Key als eine Zeile ein, speichere mit **Strg+O**, **Enter** und beende mit **Strg+X**. Dann:
+
+```bash
+chmod 600 ~/.ssh/authorized_keys
+```
+
+<Hinweis typ="warnung" titel="Einfügen in Web-Konsolen">
+Viele Web-Konsolen können nicht aus der Zwischenablage einfügen oder verschlucken Zeichen. Achte auf eine
+„Text senden“- oder „Paste“-Funktion. Prüfe das Ergebnis mit `cat ~/.ssh/authorized_keys`: Der Key muss genau eine
+Zeile sein und mit `ssh-ed25519` beginnen.
+</Hinweis>
+
+## Alternative: Key von einer URL holen
+
+Hast du deinen Public Key zum Beispiel bei GitHub hinterlegt, kannst du ihn direkt laden. So musst du nichts
+abtippen:
+
+```bash
+curl -fsSL https://github.com/DEIN-GITHUB-NAME.keys >> ~/.ssh/authorized_keys
+```
+
+Prüfe danach die Datei. Es landen **alle** Keys deines GitHub-Kontos auf dem Server.

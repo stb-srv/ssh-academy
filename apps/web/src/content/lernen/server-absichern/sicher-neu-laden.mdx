@@ -1,0 +1,54 @@
+Eine falsche Zeile in der sshd-Konfiguration kann dich aussperren. Mit dieser Reihenfolge passiert das nicht.
+
+## 1. Syntax prüfen
+
+```bash
+sudo sshd -t
+```
+
+Keine Ausgabe heißt: alles in Ordnung. Sonst steht dort die Datei und Zeile mit dem Fehler:
+
+```text
+/etc/ssh/sshd_config.d/01-sicher.conf line 3: Bad configuration option: PasswordAuthentification
+```
+
+## 2. Wirksame Werte ansehen
+
+```bash
+sudo sshd -T | grep -Ei 'passwordauth|permitroot|^port|allowusers|allowgroups'
+```
+
+## 3. Neu laden statt neu starten
+
+```bash
+sudo systemctl reload ssh
+```
+
+`reload` liest die Konfiguration neu ein. **Bestehende Verbindungen bleiben bestehen.** Deine offene Sitzung ist
+deine Rettungsleine.
+
+<Hinweis typ="info">
+Unter Ubuntu heißt der Dienst `ssh`. `systemctl reload sshd` funktioniert dort meist auch über einen Alias. Bei
+Debian ebenfalls `ssh`.
+</Hinweis>
+
+## 4. In einem neuen Fenster testen
+
+Öffne ein **neues** Terminal und melde dich neu an. Erst wenn das klappt, ist die Änderung sicher.
+
+## Wenn etwas schiefgeht
+
+- Du hast noch die alte Sitzung: Fehler korrigieren, `sshd -t`, `reload`, erneut testen.
+- Alle Sitzungen sind zu: Über die **Web-Konsole** des Hosters anmelden (Modul 3) und die Datei reparieren.
+
+## Ein Sicherheitsnetz für Mutige
+
+Für riskante Änderungen (z. B. Port-Wechsel über Firewall) kannst du eine automatische Rücknahme planen:
+
+```bash
+sudo cp /etc/ssh/sshd_config.d/01-sicher.conf /root/01-sicher.conf.bak
+sudo systemd-run --on-active=5min /bin/sh -c 'cp /root/01-sicher.conf.bak /etc/ssh/sshd_config.d/01-sicher.conf && systemctl reload ssh'
+```
+
+Klappt alles, brichst du den Timer ab (`systemctl list-timers`, dann `sudo systemctl stop run-….timer`).
+Sonst stellt der Server nach fünf Minuten selbst den alten Stand her.

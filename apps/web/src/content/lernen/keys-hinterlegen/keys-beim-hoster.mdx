@@ -1,0 +1,31 @@
+Die meisten Hoster lassen dich bereits beim **Bestellen** eines Servers einen Public Key hinterlegen. Das ist der
+bequemste Weg, weil der Server dann von Anfang an nur per Key erreichbar ist.
+
+## Das Prinzip
+
+1. Im Kundenmenü gibt es einen Bereich wie „SSH-Keys“, „Security“ oder „Zugangsdaten“.
+2. Dort fügst du den Inhalt deiner `.pub`-Datei ein und gibst ihm einen Namen.
+3. Beim Erstellen eines neuen Servers wählst du den Key aus.
+4. Der Hoster schreibt ihn beim ersten Start in `/root/.ssh/authorized_keys` (bei Ubuntu-Cloud-Images oft in den
+   Standardbenutzer, z. B. `ubuntu`).
+
+Danach meldest du dich so an:
+
+```bash
+ssh root@203.0.113.10
+```
+
+## Worauf du achten solltest
+
+| Punkt | Warum |
+|---|---|
+| Nur den **Public Key** einfügen | Ein Hoster fragt nie nach deinem Private Key. Wer danach fragt, will dich betrügen |
+| Gilt meist nur beim **ersten** Start | Später im Kundenmenü geänderte Keys landen nicht automatisch auf bestehenden Servern |
+| Benutzer prüfen | Manche Images nutzen `root`, andere `ubuntu`, `debian` oder `admin` |
+
+<Hinweis typ="info">
+Hinter dieser Funktion steckt meist **cloud-init**. Das ist auch der Grund für eine bekannte Stolperfalle beim
+Abschalten des Passwort-Logins (Modul 7).
+</Hinweis>
+
+Nach dem ersten Login solltest du sofort einen eigenen Benutzer anlegen (Modul 5) und root absichern (Modul 6 und 7).

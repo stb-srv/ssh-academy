@@ -1,0 +1,68 @@
+Ein neuer Benutzer darf noch keine Verwaltungsaufgaben erledigen. Dafür nimmst du ihn in die Gruppe **sudo** auf.
+
+## Ubuntu
+
+Bei Ubuntu ist sudo immer installiert. Ein Befehl genügt:
+
+```bash
+sudo usermod -aG sudo anna
+```
+
+- `-a` = append (anhängen),
+- `-G sudo` = zur Gruppe `sudo` hinzufügen.
+
+<Hinweis typ="gefahr" titel="Das -a nicht vergessen">
+`usermod -G sudo anna` **ohne** `-a` ersetzt alle Zusatzgruppen von anna durch `sudo`. Dabei gehen andere
+Gruppen (z. B. `docker`, `www-data`) verloren.
+</Hinweis>
+
+Alternativ mit dem Debian-Werkzeug:
+
+```bash
+sudo adduser anna sudo
+```
+
+## Debian
+
+Bei Debian hängt es von der Installation ab:
+
+- Hast du bei der Installation **kein** root-Passwort gesetzt, ist sudo installiert und dein erster Benutzer ist
+  schon in der Gruppe `sudo`.
+- Hast du ein root-Passwort gesetzt (oder ein minimales Cloud-Image), fehlt sudo oft.
+
+Prüfen:
+
+```bash
+which sudo || echo "sudo fehlt"
+```
+
+Falls sudo fehlt, als root:
+
+```bash
+apt update
+apt install sudo
+usermod -aG sudo anna
+```
+
+Bist du nicht als root angemeldet, wechselst du mit `su -` zu root (fragt nach dem root-Passwort).
+
+## Wirksam werden lassen
+
+Gruppenänderungen gelten erst bei der **nächsten Anmeldung** von anna. Ist anna gerade eingeloggt: abmelden und neu
+anmelden.
+
+## Testen
+
+Als anna:
+
+```bash
+sudo whoami
+```
+
+```text
+[sudo] password for anna:
+root
+```
+
+Kommt `root`, hat es geklappt. Kommt `anna is not in the sudoers file`, stimmt die Gruppe nicht oder anna hat sich
+noch nicht neu angemeldet.

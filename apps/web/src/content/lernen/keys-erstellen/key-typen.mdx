@@ -1,0 +1,38 @@
+Beim Erzeugen eines Keys wählst du einen **Typ**. Das ist das mathematische Verfahren dahinter. Die Kurzfassung:
+**Nimm Ed25519.**
+
+## Die Typen im Überblick
+
+| Typ | Empfehlung | Warum |
+|---|---|---|
+| **Ed25519** | ✅ Standard | Modern, schnell, kurze Keys, sehr sicher, keine Parameter, bei denen man sich vertun kann |
+| **RSA** (3072 oder 4096 Bit) | ⚠️ Nur für alte Systeme | Funktioniert überall, aber lange Keys und langsamer |
+| **ECDSA** (256/384/521 Bit) | ➖ Möglich | Sicher, aber Ed25519 ist die bessere Wahl |
+| **Ed25519-SK / ECDSA-SK** | ✅ Mit Hardware-Key | Private Key liegt auf einem YubiKey oder ähnlichem (siehe eigene Lektion) |
+| **DSA** | ❌ Nie | Veraltet und in OpenSSH abgeschaltet |
+| **RSA unter 2048 Bit** | ❌ Nie | Zu schwach |
+
+## Wann brauche ich doch RSA?
+
+Nur wenn du dich mit sehr alten Geräten verbinden musst, die Ed25519 nicht kennen, zum Beispiel:
+
+- ältere Netzwerk-Switches oder Router,
+- Server mit OpenSSH älter als Version 6.5 (aus dem Jahr 2014),
+- manche alten Firmenprogramme.
+
+Dann erzeugst du **zusätzlich** einen RSA-Key mit mindestens 3072 Bit:
+
+```bash
+ssh-keygen -t rsa -b 4096 -C "anna@laptop-rsa"
+```
+
+<Hinweis typ="info">
+Du kannst problemlos mehrere Keys parallel haben, zum Beispiel einen Ed25519-Key für moderne Server und einen
+RSA-Key für das alte NAS. Wie du festlegst, welcher Key wofür benutzt wird, lernst du in Modul 4.
+</Hinweis>
+
+<Hinweis typ="profi">
+Ed25519 nutzt die Kurve Curve25519 in Edwards-Form und deterministische Signaturen. Damit entfällt die Gefahr
+schwacher Zufallszahlen beim Signieren, die bei ECDSA schon zu Key-Leaks geführt hat. OpenSSH unterstützt
+Ed25519 seit Version 6.5.
+</Hinweis>

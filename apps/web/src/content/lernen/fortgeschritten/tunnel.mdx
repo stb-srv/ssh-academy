@@ -1,0 +1,65 @@
+SSH kann nicht nur Befehle ausführen, sondern beliebige Verbindungen verschlüsselt durchleiten. Das nennt man
+**Port-Forwarding** oder **Tunnel**.
+
+## Lokale Weiterleitung (-L)
+
+Ein Dienst lauscht nur auf dem Server selbst, zum Beispiel eine Datenbank-Oberfläche auf `localhost:8080`. Du willst
+sie im Browser öffnen:
+
+```bash
+ssh -L 8080:localhost:8080 anna@web
+```
+
+Solange die Verbindung steht, öffnest du `http://localhost:8080` auf deinem Rechner und landest beim Dienst auf dem
+Server.
+
+Aufbau: `-L LOKALER_PORT:ZIEL:ZIEL_PORT`. Das Ziel wird **vom Server aus** gesehen. So erreichst du auch Rechner
+hinter dem Server:
+
+```bash
+ssh -L 5432:10.0.0.5:5432 anna@web
+```
+
+## Entfernte Weiterleitung (-R)
+
+Umgekehrt: Ein Dienst auf **deinem** Rechner soll vom Server aus erreichbar sein.
+
+```bash
+ssh -R 9000:localhost:3000 anna@web
+```
+
+Auf dem Server führt `localhost:9000` jetzt zu Port 3000 auf deinem Laptop.
+
+## Dynamische Weiterleitung (-D): SOCKS-Proxy
+
+```bash
+ssh -D 1080 anna@web
+```
+
+Stellst du im Browser einen SOCKS5-Proxy auf `localhost:1080` ein, laufen alle Seitenaufrufe über den Server.
+
+## Nützliche Zusatzoptionen
+
+| Option | Wirkung |
+|---|---|
+| `-N` | Keine Shell öffnen, nur Tunnel |
+| `-f` | In den Hintergrund gehen |
+| `-o ExitOnForwardFailure=yes` | Abbrechen, wenn der Tunnel nicht aufgebaut werden kann |
+
+```bash
+ssh -fN -L 8080:localhost:8080 anna@web
+```
+
+Dauerhaft in `~/.ssh/config`:
+
+```text
+Host web-tunnel
+  HostName 203.0.113.10
+  User anna
+  LocalForward 8080 localhost:8080
+```
+
+<Hinweis typ="warnung">
+Tunnel umgehen Firewalls. Auf Servern, auf denen Benutzer das nicht dürfen sollen: `AllowTcpForwarding no` in der
+sshd-Konfiguration oder `restrict`/`no-port-forwarding` in `authorized_keys`.
+</Hinweis>

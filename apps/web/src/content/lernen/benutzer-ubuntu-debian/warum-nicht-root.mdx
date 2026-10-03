@@ -1,0 +1,35 @@
+Nach dem ersten Login auf einem neuen Server bist du oft **root**, der Benutzer mit allen Rechten. Dauerhaft als root
+zu arbeiten ist trotzdem keine gute Idee.
+
+## Was root darf
+
+Alles. root kann jede Datei löschen, jedes Programm installieren, jeden Benutzer ändern. Es gibt keine Rückfrage
+und keinen Papierkorb.
+
+```bash
+rm -rf /var/www   # ein Tippfehler bei einem Leerzeichen genügt …
+```
+
+## Die Probleme
+
+| Problem | Erklärung |
+|---|---|
+| Fehler wirken sofort voll | Ein Tippfehler als root kann den ganzen Server zerstören |
+| Bekanntes Angriffsziel | Jeder Bot weiß, dass es den Benutzer `root` gibt |
+| Keine Nachvollziehbarkeit | Arbeiten drei Leute als root, weiß niemand, wer was getan hat |
+| Alles oder nichts | Man kann root nicht „ein bisschen“ Rechte geben |
+
+## Die Lösung: eigener Benutzer plus sudo
+
+Du legst für dich (und jede weitere Person) einen eigenen Benutzer an. Für Verwaltungsaufgaben stellst du `sudo`
+vor den Befehl:
+
+```bash
+sudo apt update
+```
+
+- Du arbeitest normal mit eingeschränkten Rechten.
+- Nur wenn es nötig ist, holst du dir mit `sudo` kurz root-Rechte.
+- Jede sudo-Nutzung wird protokolliert: wer, wann, welcher Befehl.
+
+Die nächsten Lektionen zeigen Schritt für Schritt, wie das unter Ubuntu und Debian geht.

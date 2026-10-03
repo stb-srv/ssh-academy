@@ -1,0 +1,53 @@
+Die beste SSH-Konfiguration hilft wenig, wenn bekannte Sicherheitslücken offen bleiben. Ubuntu und Debian können
+Sicherheitsupdates automatisch einspielen.
+
+## unattended-upgrades einrichten
+
+```bash
+sudo apt install unattended-upgrades
+sudo dpkg-reconfigure -plow unattended-upgrades
+```
+
+Die Frage „Automatically download and install stable updates?“ mit **Ja** beantworten. Das erzeugt
+`/etc/apt/apt.conf.d/20auto-upgrades`:
+
+```text
+APT::Periodic::Update-Package-Lists "1";
+APT::Periodic::Unattended-Upgrade "1";
+```
+
+Bei Ubuntu ist das Paket meist schon installiert und aktiv.
+
+## Prüfen, ob es läuft
+
+```bash
+sudo unattended-upgrade --dry-run --debug 2>&1 | tail -20
+cat /var/log/unattended-upgrades/unattended-upgrades.log
+```
+
+## Automatischer Neustart (optional)
+
+Manche Updates (Kernel) brauchen einen Neustart. In `/etc/apt/apt.conf.d/50unattended-upgrades`:
+
+```text
+Unattended-Upgrade::Automatic-Reboot "true";
+Unattended-Upgrade::Automatic-Reboot-Time "04:00";
+```
+
+Ob ein Neustart aussteht, zeigt:
+
+```bash
+ls /var/run/reboot-required 2>/dev/null && cat /var/run/reboot-required.pkgs
+```
+
+## Checkliste Server-Absicherung
+
+- [ ] Eigener Benutzer mit sudo und Key
+- [ ] `PermitRootLogin no`
+- [ ] `PasswordAuthentication no` und `KbdInteractiveAuthentication no`
+- [ ] Wirksame Werte mit `sshd -T` geprüft
+- [ ] Firewall aktiv, nur nötige Ports offen
+- [ ] Fail2ban (optional)
+- [ ] Automatische Sicherheitsupdates
+
+Herzlichen Glückwunsch, dein Server ist jetzt solide abgesichert!
