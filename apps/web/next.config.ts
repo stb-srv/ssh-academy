@@ -15,7 +15,7 @@ const nextConfig: NextConfig = {
   // Monorepo: Abhängigkeiten aus dem Wurzelverzeichnis mit ins Standalone-Bundle aufnehmen
   outputFileTracingRoot: path.join(import.meta.dirname, "../../"),
   poweredByHeader: false,
-  transpilePackages: ["@ssh-academy/db"],
+  transpilePackages: ["@ssh-academy/db", "@ssh-academy/ssh"],
   serverExternalPackages: ["@node-rs/argon2"],
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];

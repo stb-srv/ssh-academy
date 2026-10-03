@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { fromBase64, generateSshKey, parsePublicKey, PublicKeyError } from "./ssh-keys";
+import { fromBase64, generateSshKey, parsePublicKey, PublicKeyError } from "./keys";
 
 // Mit ssh-keygen erzeugt; Fingerprint laut "ssh-keygen -lf"
 const ECDSA_384 = "ecdsa-sha2-nistp384 AAAAE2VjZHNhLXNoYTItbmlzdHAzODQAAAAIbmlzdHAzODQAAABhBLYcMVTKIU6crgKRZwqKFqo+csfvWp9NgQOrofao2D1Uix7zUaL05YFQYe2FdYlpolsORbO3fXXL0l3aJEy8PejSBUK70PgBtMVLUQgjcsvszBfHXeoG/gCA3EfMzrr0rg== root@vm";

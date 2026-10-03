@@ -8,7 +8,7 @@ import { fileURLToPath } from "node:url";
 const url = process.env.DATABASE_URL;
 if (!url) throw new Error("DATABASE_URL ist nicht gesetzt");
 
-const client = postgres(url, { max: 1 });
+const client = postgres(url, { max: 1, onnotice: () => {} });
 const migrationsFolder = fileURLToPath(new URL("../migrations", import.meta.url));
 
 await migrate(drizzle(client), { migrationsFolder });
