@@ -53,3 +53,4 @@ jobs:
         run: |
           docker build --target migrate -t ssh-academy-migrate .
           docker build --target web -t ssh-academy-web .
+          docker build --target gateway -t ssh-academy-gateway .

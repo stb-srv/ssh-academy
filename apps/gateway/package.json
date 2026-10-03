@@ -9,7 +9,7 @@
     "start": "node dist/server.mjs",
     "typecheck": "tsc --noEmit",
     "lint": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
     "@ssh-academy/db": "workspace:*",

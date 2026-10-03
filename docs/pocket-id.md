@@ -73,5 +73,29 @@ Sitzungen aus einem Pocket-ID-Login gelten höchstens `POCKET_ID_MAX_SESSION_HOU
 ab dem Login. Danach ist ein neuer Login über Pocket ID nötig. So verliert ein in Pocket ID deaktivierter
 Nutzer spätestens nach dieser Zeit den Zugang, und die Gruppen werden regelmäßig neu abgeglichen.
 
-Ein Login über Pocket ID erfolgt per Passkey und zählt deshalb als starke Anmeldung (wird ab Phase 2 für
-Server und den Key-Tresor vorausgesetzt).
+Ein Login über Pocket ID erfolgt per Passkey und zählt deshalb als starke Anmeldung (wird für Server, den
+Key-Tresor und Zertifikate vorausgesetzt).
+
+## Sofortiges Offboarding über die Pocket-ID-API (empfohlen)
+
+Ohne weitere Einstellung merkt die Plattform eine Sperre in Pocket ID erst beim nächsten Login. Mit einem
+API-Key gleicht sie regelmäßig (Standard: alle 60 Minuten) alle verknüpften Konten ab:
+
+1. In Pocket ID unter **Einstellungen > API-Keys** einen Key anlegen.
+2. In `.env` eintragen und neu starten:
+
+   ```env
+   POCKET_ID_API_KEY=...
+   POCKET_ID_SYNC_MINUTES=60
+   ```
+
+Bei jedem Abgleich gilt:
+
+- Nutzer in Pocket ID **deaktiviert oder gelöscht**: Das Konto wird gesperrt, alle Sitzungen beendet,
+  laufende Terminal-Verbindungen getrennt (spätestens nach 30 Sekunden), und der Nutzer wird aus allen Teams
+  entfernt. Dabei werden seine persönlichen Keys von allen Team-Servern entfernt (Offboarding).
+- Nutzer wieder aktiviert: Die vom Abgleich gesetzte Sperre wird aufgehoben. Team-Mitgliedschaften kommen
+  über die Gruppen-Zuordnung beim nächsten Abgleich zurück.
+- Gruppen geändert: Team-Rollen werden wie beim Login angepasst, ohne dass sich der Nutzer neu anmelden muss.
+
+Liefert die API keine Nutzer (z. B. falscher Key), bricht der Abgleich ab, statt alle zu sperren.

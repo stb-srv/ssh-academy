@@ -17,5 +17,13 @@
 		-Server
 	}
 
-	reverse_proxy web:3000
+	# Browser-Terminal und Dateibrowser: WebSocket zum SSH-Gateway. Nur dieser eine Pfad ist
+	# öffentlich; die interne API des Gateways ist nur im Docker-Netz erreichbar.
+	handle /gateway/ws {
+		reverse_proxy gateway:4000
+	}
+
+	handle {
+		reverse_proxy web:3000
+	}
 }
