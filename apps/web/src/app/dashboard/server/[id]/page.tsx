@@ -7,6 +7,8 @@ import { HostKeyPanel } from "@/components/server/host-key-panel";
 import { ManagementKeySelect } from "@/components/server/management-key-select";
 import { ServerSettingsForm } from "@/components/server/server-settings-form";
 import { ServerStatusBadge } from "@/components/server/status-badge";
+import type { AuthOption } from "@/components/server/auth-fields";
+import { InstallCaForm } from "@/components/zertifikate/cert-forms";
 import { ActionButton } from "@/components/ui/action-button";
 import { Badge } from "@/components/ui/badge";
 import { ButtonLink } from "@/components/ui/button";
@@ -158,6 +160,8 @@ export default async function ServerPage({ params }: PageProps<"/dashboard/serve
         )}
       </Card>
 
+      {access.canManage && confirmed && <CaSection serverId={id} server={server} authOptions={options} />}
+
       {access.canManage && (
         <Card className="space-y-4">
           <h2 className="font-semibold">Einstellungen</h2>
@@ -172,6 +176,42 @@ export default async function ServerPage({ params }: PageProps<"/dashboard/serve
       )}
       {server.organizationId && <RecentSessions serverId={id} />}
     </div>
+  );
+}
+
+async function CaSection({ serverId, server, authOptions }: { serverId: string; server: typeof schema.server.$inferSelect; authOptions: AuthOption[] }) {
+  const cas = await db
+    .select({ id: schema.sshCa.id, name: schema.sshCa.name })
+    .from(schema.sshCa)
+    .where(server.ownerUserId ? eq(schema.sshCa.ownerUserId, server.ownerUserId) : eq(schema.sshCa.organizationId, server.organizationId!));
+  const current = cas.find((c) => c.id === server.trustedCaId);
+  return (
+    <Card className="space-y-3">
+      <h2 className="font-semibold">Zertifikate</h2>
+      {current ? (
+        <p className="text-sm">
+          Der Server vertraut der Zertifizierungsstelle <span className="font-medium">{current.name}</span>.
+        </p>
+      ) : (
+        <p className="text-sm text-muted">Der Server vertraut noch keiner Zertifizierungsstelle der Plattform.</p>
+      )}
+      {cas.length === 0 ? (
+        <p className="text-sm text-muted">
+          Lege zuerst unter{" "}
+          <Link href="/dashboard/zertifikate" className="text-primary underline">
+            Zertifikate
+          </Link>{" "}
+          eine Zertifizierungsstelle an.
+        </p>
+      ) : (
+        <details>
+          <summary className="cursor-pointer text-sm text-primary">{current ? "Andere Stelle hinterlegen" : "Zertifizierungsstelle hinterlegen"}</summary>
+          <div className="mt-3">
+            <InstallCaForm serverId={serverId} cas={cas} authOptions={authOptions} defaultUser={server.defaultUser} currentCaId={server.trustedCaId} />
+          </div>
+        </details>
+      )}
+    </Card>
   );
 }
 
