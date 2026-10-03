@@ -1,0 +1,72 @@
+# SSH-Academy: komplette Installation mit einem Befehl
+#   cp .env.example .env   (Werte anpassen)
+#   docker compose up -d
+name: ssh-academy
+
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ssh_academy
+      POSTGRES_USER: ssh_academy
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD fehlt in .env}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ssh_academy -d ssh_academy"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    networks: [internal]
+
+  migrate:
+    build: { context: ., target: migrate }
+    image: ssh-academy-migrate:latest
+    environment:
+      DATABASE_URL: postgres://ssh_academy:${POSTGRES_PASSWORD}@db:5432/ssh_academy
+    depends_on:
+      db: { condition: service_healthy }
+    restart: "no"
+    networks: [internal]
+
+  web:
+    build: { context: ., target: web }
+    image: ssh-academy-web:latest
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATABASE_URL: postgres://ssh_academy:${POSTGRES_PASSWORD}@db:5432/ssh_academy
+    depends_on:
+      db: { condition: service_healthy }
+      migrate: { condition: service_completed_successfully }
+    networks: [internal, web]
+    # Ohne Caddy (z. B. hinter einem vorhandenen Reverse Proxy): Port freigeben
+    # ports: ["3000:3000"]
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:-:80}
+      CADDY_GLOBAL_OPTIONS: ${CADDY_GLOBAL_OPTIONS:-}
+    ports:
+      - "${HTTP_PORT:-80}:80"
+      - "${HTTPS_PORT:-443}:443"
+      - "${HTTPS_PORT:-443}:443/udp"
+    volumes:
+      - ./infra/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on: [web]
+    networks: [web]
+
+volumes:
+  db-data:
+  caddy-data:
+  caddy-config:
+
+networks:
+  internal:
+    internal: true
+  web:

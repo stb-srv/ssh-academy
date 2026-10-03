@@ -1,0 +1,21 @@
+# SITE_ADDRESS steuert, wie Caddy erreichbar ist:
+#   ssh.example.de      -> automatisches HTTPS mit Let's Encrypt (Domain muss auf den Server zeigen)
+#   :80                 -> nur HTTP, z. B. hinter einem vorhandenen Reverse Proxy (NPM, Traefik, ...)
+#   ssh.home.lan        -> HTTPS im Heimnetz mit eigener CA (zusätzlich CADDY_GLOBAL_OPTIONS=local_certs)
+{
+	# Für Adressen im Heimnetz (z. B. ssh.home.lan) eigene Zertifikate statt Let's Encrypt:
+	# CADDY_GLOBAL_OPTIONS=local_certs in .env setzen.
+	{$CADDY_GLOBAL_OPTIONS}
+}
+
+{$SITE_ADDRESS} {
+	encode zstd gzip
+
+	header {
+		# HSTS nur wirksam, wenn die Seite per HTTPS ausgeliefert wird
+		Strict-Transport-Security "max-age=63072000; includeSubDomains"
+		-Server
+	}
+
+	reverse_proxy web:3000
+}
